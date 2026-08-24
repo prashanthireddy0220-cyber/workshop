@@ -34,6 +34,7 @@ const Footer = () => {
             <li style={{ marginBottom: '8px' }}><a href="#about" style={{ color: '#94A3B8', textDecoration: 'none' }}>About Workshop</a></li>
             <li style={{ marginBottom: '8px' }}><a href="#topics" style={{ color: '#94A3B8', textDecoration: 'none' }}>Topics Covered</a></li>
             <li style={{ marginBottom: '8px' }}><a href="#schedule" style={{ color: '#94A3B8', textDecoration: 'none' }}>Event Schedule</a></li>
+            <li style={{ marginBottom: '8px' }}><a href="/admin" style={{ color: '#64748B', textDecoration: 'none', fontSize: '0.85rem' }}>Admin Portal Login</a></li>
           </ul>
         </div>
 
