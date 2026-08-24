@@ -75,8 +75,8 @@ const AdminSettings = () => {
             <input type="email" className="form-control" defaultValue="admin@klu.ac.in" readOnly style={{ background: 'rgba(255,255,255,0.03)' }} />
           </div>
 
-          <div style={{ padding: '14px', background: 'rgba(249, 115, 22, 0.08)', borderRadius: '12px', border: '1px solid rgba(249, 115, 22, 0.2)', color: '#F97316', fontSize: '0.84rem' }}>
-            To modify default environment admin username/password (`ADMIN_USERNAME` & `ADMIN_PASSWORD`), update `backend/.env` file.
+          <div style={{ padding: '14px 16px', background: 'rgba(249, 115, 22, 0.08)', borderRadius: '12px', border: '1px solid rgba(249, 115, 22, 0.2)', color: '#F97316', fontSize: '0.86rem', lineHeight: '1.6' }}>
+            To modify default environment admin username/password (<code style={{ background: 'rgba(255,255,255,0.12)', padding: '2px 7px', borderRadius: '5px', color: '#FFF', fontWeight: 600 }}>ADMIN_USERNAME</code> & <code style={{ background: 'rgba(255,255,255,0.12)', padding: '2px 7px', borderRadius: '5px', color: '#FFF', fontWeight: 600 }}>ADMIN_PASSWORD</code>), update <code style={{ background: 'rgba(255,255,255,0.12)', padding: '2px 7px', borderRadius: '5px', color: '#FFF', fontWeight: 600 }}>backend/.env</code> file.
           </div>
 
           <button type="submit" className="btn-primary" style={{ padding: '12px 20px', justifyContent: 'center', alignSelf: 'flex-start', marginTop: '10px' }}>

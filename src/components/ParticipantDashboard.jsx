@@ -92,7 +92,24 @@ const ParticipantDashboard = ({ isOpen, onClose, onOpenRegistration, onOpenPayme
         </div>
 
         {/* State Tracker Stepper Cards */}
-        {!registration ? (
+        {user.role === 'admin' ? (
+          <div style={{ textAlign: 'center', padding: '36px 20px', background: 'rgba(249, 115, 22, 0.08)', borderRadius: '20px', border: '1px solid rgba(249, 115, 22, 0.25)' }}>
+            <div style={{ background: 'rgba(249, 115, 22, 0.15)', width: '64px', height: '64px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto' }}>
+              <User size={32} color="#F97316" />
+            </div>
+            <h3 style={{ color: '#FFF', fontSize: '1.35rem', fontWeight: 800, marginBottom: '8px' }}>Authorized IEEE Admin Account</h3>
+            <p style={{ color: '#94A3B8', maxWidth: '480px', margin: '0 auto 24px auto', fontSize: '0.92rem', lineHeight: '1.5' }}>
+              You are authenticated as an Administrator (<strong style={{ color: '#F97316' }}>{user.email}</strong>). Admin users manage registrations, venue check-ins, workshops, and certificates via the Admin Control Panel.
+            </p>
+            <a
+              href="/admin"
+              className="btn-primary"
+              style={{ display: 'inline-flex', padding: '12px 24px', fontSize: '0.95rem', textDecoration: 'none' }}
+            >
+              Open Admin Control Panel (/admin)
+            </a>
+          </div>
+        ) : !registration ? (
           <div style={{ textAlign: 'center', padding: '40px 20px' }}>
             <div style={{ background: 'rgba(249, 115, 22, 0.1)', width: '60px', height: '60px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto' }}>
               <User size={30} color="#F97316" />

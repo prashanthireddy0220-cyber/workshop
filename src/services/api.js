@@ -49,7 +49,7 @@ export const getPayment = (registrationId) => api.get(`/payments/${registrationI
 // Admin Services
 export const getAdminDashboard = () => api.get('/admin/dashboard');
 export const getAdminRegistrations = (params) => api.get('/admin/registrations', { params });
-export const updateEventConfig = (config) => api.put('/event/config', config);
+export const updateEventConfig = (config) => api.put('/admin/event/config', config);
 export const approvePayment = (id) => api.put(`/admin/payments/${id}/approve`);
 export const rejectPayment = (id, rejectionReason) => api.put(`/admin/payments/${id}/reject`, { rejectionReason });
 export const searchParticipants = (q) => api.get('/admin/participants/search', { params: { q } });

@@ -29,12 +29,12 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!transactionId.trim()) {
-      setError('Please enter the UPI Transaction/Reference ID');
+    if (!file) {
+      setError('Please upload your payment screenshot proof first.');
       return;
     }
-    if (!file) {
-      setError('Please upload your payment screenshot proof');
+    if (!transactionId.trim()) {
+      setError('Please enter the UPI Transaction / UTR Reference Number.');
       return;
     }
 
@@ -99,7 +99,7 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
           gap: '20px',
           alignItems: 'center'
         }}>
-          {/* Mock UPI QR */}
+          {/* UPI QR Code */}
           <div style={{
             background: '#FFF',
             padding: '10px',
@@ -121,7 +121,7 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
             <p style={{ color: '#94A3B8', fontSize: '0.85rem', marginBottom: '6px' }}>
               1. Scan QR code using GPay, PhonePe, or Paytm.<br />
               2. Pay exact fee: <strong style={{ color: '#F97316' }}>₹250</strong>.<br />
-              3. Note down 12-digit UTR/Ref ID & take screenshot.
+              3. Take a screenshot of the payment receipt & enter 12-digit UTR ID.
             </p>
             <div style={{ fontSize: '0.85rem', color: '#38BDF8' }}>
               UPI ID: <strong>ieee.kare@upi</strong>
@@ -148,34 +148,28 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
         )}
 
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>UPI Transaction / Reference ID (12 digits)</label>
-            <input
-              type="text"
-              className="form-control"
-              placeholder="e.g. 425619873012"
-              value={transactionId}
-              onChange={(e) => setTransactionId(e.target.value)}
-              required
-            />
-          </div>
 
-          <div className="form-group">
-            <label>Upload Payment Screenshot Proof (JPG, PNG, PDF &lt; 5MB)</label>
+          {/* FIRST: Upload Payment Screenshot Proof */}
+          <div className="form-group" style={{ marginBottom: '18px' }}>
+            <label style={{ display: 'block', fontSize: '0.88rem', color: '#FFF', fontWeight: 700, marginBottom: '6px' }}>
+              1. Upload Payment Screenshot Proof (JPG, PNG, WEBP, PDF &lt; 5MB)
+            </label>
             
             <div style={{
-              border: '2px dashed rgba(255, 255, 255, 0.15)',
-              borderRadius: '10px',
+              border: '2px dashed rgba(249, 115, 22, 0.35)',
+              borderRadius: '12px',
               padding: '24px',
               textAlign: 'center',
               cursor: 'pointer',
-              background: 'rgba(15, 23, 42, 0.6)',
-              position: 'relative'
+              background: 'rgba(15, 23, 42, 0.7)',
+              position: 'relative',
+              transition: 'border-color 0.2s'
             }}>
               <input
                 type="file"
                 accept="image/*,.pdf"
                 onChange={handleFileChange}
+                required
                 style={{
                   position: 'absolute',
                   top: 0,
@@ -192,29 +186,46 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
                   <img
                     src={previewUrl}
                     alt="Payment Screenshot Preview"
-                    style={{ maxHeight: '140px', borderRadius: '6px', margin: '0 auto 8px auto', display: 'block' }}
+                    style={{ maxHeight: '140px', borderRadius: '8px', margin: '0 auto 8px auto', display: 'block', border: '1px solid rgba(255,255,255,0.2)' }}
                   />
-                  <span style={{ fontSize: '0.85rem', color: '#34D399' }}>✓ File Selected: {file.name}</span>
+                  <span style={{ fontSize: '0.85rem', color: '#34D399', fontWeight: 700 }}>
+                    ✓ Screenshot Selected: {file.name}
+                  </span>
                 </div>
               ) : (
                 <div>
-                  <Upload size={32} color="#F97316" style={{ margin: '0 auto 8px auto', display: 'block' }} />
-                  <p style={{ color: '#FFF', fontSize: '0.9rem', fontWeight: 500 }}>
+                  <Upload size={34} color="#F97316" style={{ margin: '0 auto 8px auto', display: 'block' }} />
+                  <p style={{ color: '#FFF', fontSize: '0.92rem', fontWeight: 700 }}>
                     Click or drag payment screenshot here
                   </p>
-                  <p style={{ color: '#64748B', fontSize: '0.75rem', marginTop: '4px' }}>
-                    Supports JPG, PNG, WEBP & PDF files up to 5MB
+                  <p style={{ color: '#94A3B8', fontSize: '0.78rem', marginTop: '4px' }}>
+                    Upload GPay, PhonePe, Paytm or Netbanking payment receipt screenshot
                   </p>
                 </div>
               )}
             </div>
           </div>
 
+          {/* SECOND: UTR / UPI Transaction Reference Number */}
+          <div className="form-group" style={{ marginBottom: '22px' }}>
+            <label style={{ display: 'block', fontSize: '0.88rem', color: '#FFF', fontWeight: 700, marginBottom: '6px' }}>
+              2. UPI / UTR Transaction Reference ID (12 digits)
+            </label>
+            <input
+              type="text"
+              className="form-control"
+              placeholder="e.g. 425619873012"
+              value={transactionId}
+              onChange={(e) => setTransactionId(e.target.value)}
+              required
+            />
+          </div>
+
           <button
             type="submit"
             disabled={loading}
             className="btn-primary"
-            style={{ width: '100%', justifyContent: 'center', marginTop: '10px' }}
+            style={{ width: '100%', justifyContent: 'center', padding: '14px', fontSize: '0.95rem' }}
           >
             {loading ? 'Submitting Payment Proof...' : 'Submit Payment Proof'}
           </button>
