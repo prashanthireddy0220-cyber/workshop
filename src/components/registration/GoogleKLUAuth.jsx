@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { CheckCircle2, AlertTriangle, LogOut, ShieldCheck, UserCheck, Lock } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, LogOut, ShieldCheck, UserCheck, Mail, ArrowRight } from 'lucide-react';
 
 const GoogleKLUAuth = ({ onAuthSuccess }) => {
-  const { user, handleGoogleLogin, logout, error } = useAuth();
+  const { user, handleGoogleLogin, handleDevLogin, logout, error } = useAuth();
   const [loading, setLoading] = useState(false);
   const [localError, setLocalError] = useState('');
+  const [showDirectInput, setShowDirectInput] = useState(false);
+  const [kluEmail, setKluEmail] = useState('');
 
   const onSignInClick = async () => {
     setLoading(true);
@@ -16,7 +18,26 @@ const GoogleKLUAuth = ({ onAuthSuccess }) => {
     } catch (err) {
       if (err.message !== 'Sign-in cancelled.') {
         setLocalError(err.message || 'Please sign in using your KLU (@klu.ac.in) Google account.');
+        setShowDirectInput(true);
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onDirectSubmit = async (e) => {
+    e.preventDefault();
+    if (!kluEmail.trim().toLowerCase().endsWith('@klu.ac.in')) {
+      setLocalError('Please enter a valid KLU email ending with @klu.ac.in');
+      return;
+    }
+    setLoading(true);
+    setLocalError('');
+    try {
+      await handleDevLogin(kluEmail);
+      if (onAuthSuccess) onAuthSuccess();
+    } catch (err) {
+      setLocalError(err.message || 'Sign in failed.');
     } finally {
       setLoading(false);
     }
@@ -61,11 +82,13 @@ const GoogleKLUAuth = ({ onAuthSuccess }) => {
               fontSize: '0.85rem',
               marginBottom: '16px',
               display: 'flex',
-              alignItems: 'center',
-              gap: '10px'
+              flexDirection: 'column',
+              gap: '8px'
             }}>
-              <AlertTriangle size={18} flexShrink={0} />
-              <span>{localError || error}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <AlertTriangle size={18} flexShrink={0} />
+                <span>{localError || error}</span>
+              </div>
             </div>
           )}
 
@@ -100,8 +123,80 @@ const GoogleKLUAuth = ({ onAuthSuccess }) => {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
             </svg>
-            {loading ? 'Opening Google Account Chooser...' : 'Sign in with Google Account (@klu.ac.in)'}
+            {loading ? 'Processing Authentication...' : 'Sign in with Google Account (@klu.ac.in)'}
           </button>
+
+          {/* Fallback Direct KLU Email Sign-in */}
+          {(!showDirectInput) ? (
+            <button
+              type="button"
+              onClick={() => setShowDirectInput(true)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#F97316',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                width: '100%',
+                textAlign: 'center',
+                marginBottom: '14px',
+                textDecoration: 'underline'
+              }}
+            >
+              Sign in using KLU Email directly
+            </button>
+          ) : (
+            <form onSubmit={onDirectSubmit} style={{ marginTop: '12px', marginBottom: '14px' }}>
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.05)',
+                padding: '14px',
+                borderRadius: '12px',
+                border: '1px solid rgba(249, 115, 22, 0.3)'
+              }}>
+                <label style={{ display: 'block', color: '#CBD5E1', fontSize: '0.82rem', fontWeight: 600, marginBottom: '8px' }}>
+                  Enter your @klu.ac.in Email Address:
+                </label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="email"
+                    required
+                    placeholder="2100030000@klu.ac.in"
+                    value={kluEmail}
+                    onChange={(e) => setKluEmail(e.target.value)}
+                    style={{
+                      flex: 1,
+                      padding: '10px 12px',
+                      borderRadius: '8px',
+                      background: '#0F172A',
+                      border: '1px solid #334155',
+                      color: '#FFFFFF',
+                      fontSize: '0.88rem'
+                    }}
+                  />
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    style={{
+                      background: '#F97316',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      padding: '10px 16px',
+                      borderRadius: '8px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <span>Sign In</span>
+                    <ArrowRight size={16} />
+                  </button>
+                </div>
+              </div>
+            </form>
+          )}
 
           <div style={{
             fontSize: '0.78rem',
