@@ -2,7 +2,7 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyDb8iQiQ-42WT0hpc2RSoRvjdbC_w1Tjuw',
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'workshop-3a4e6.firebaseapp.com',
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'workshop-3a4e6',
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'workshop-3a4e6.firebasestorage.app',
