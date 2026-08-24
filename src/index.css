@@ -451,4 +451,49 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+/* ==========================================================================
+   Mobile Responsive Form & Modal Layout Enhancements
+   ========================================================================== */
+@media (max-width: 640px) {
+  .modal-overlay {
+    padding: 10px !important;
+    align-items: flex-start !important;
+    overflow-y: auto !important;
+  }
+
+  .modal-content {
+    padding: 20px 16px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 10px auto !important;
+    max-height: 92vh !important;
+    overflow-y: auto !important;
+    border-radius: 16px !important;
+  }
+
+  .form-grid-2,
+  .form-grid-3,
+  .form-row,
+  div[style*="gridTemplateColumns"] {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .form-control,
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  select {
+    width: 100% !important;
+    font-size: 0.88rem !important;
+    padding: 10px 12px !important;
+    box-sizing: border-box !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .glass-card {
+    padding: 16px !important;
+  }
+}
+
 

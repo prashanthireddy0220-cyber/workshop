@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { lockSeat, confirmPayment } from '../../services/api';
-import { X, Clock, ShieldCheck, AlertCircle, ArrowRight, CheckCircle2, Lock, QrCode, CreditCard } from 'lucide-react';
+import { lockSeat, confirmPayment, submitPayment } from '../../services/api';
+import { X, Clock, ShieldCheck, AlertCircle, ArrowRight, CheckCircle2, Lock, QrCode, CreditCard, Upload } from 'lucide-react';
 
 const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
   const { user, refreshRegistration } = useAuth();
@@ -18,10 +18,13 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
     studentId: '',
     department: 'CSE',
     year: '3rd Year',
-    section: 'A',
+    section: '24S01',
     residency: 'Day Scholar',
     transactionId: ''
   });
+
+  const [paymentFile, setPaymentFile] = useState(null);
+  const [paymentPreviewUrl, setPaymentPreviewUrl] = useState('');
 
   // Pre-fill user details from Google profile when user or modal opens
   useEffect(() => {
@@ -87,7 +90,27 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
   if (!isOpen || !user) return null;
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (name === 'transactionId') {
+      // Clean only numeric digits and limit to 12 digits
+      const cleanVal = value.replace(/\D/g, '').slice(0, 12);
+      setFormData({ ...formData, transactionId: cleanVal });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const selected = e.target.files[0];
+    if (selected) {
+      if (selected.size > 5 * 1024 * 1024) {
+        setError('File size exceeds 5MB limit');
+        return;
+      }
+      setPaymentFile(selected);
+      setPaymentPreviewUrl(URL.createObjectURL(selected));
+      setError('');
+    }
   };
 
   const handleNextToPayment = (e) => {
@@ -102,18 +125,45 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
 
   const handlePaymentSubmit = async (e) => {
     e.preventDefault();
+    
+    // Strict 12-digit UTR validation
+    const utr = formData.transactionId ? formData.transactionId.trim() : '';
+    if (!utr || utr.length !== 12 || !/^\d{12}$/.test(utr)) {
+      setError('UPI Reference / UTR Number must be exactly 12 numeric digits (e.g. 123456789012).');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
     try {
+      let registrationRecord = null;
+
+      // Submit payment confirmation
       const res = await confirmPayment({
-        transactionId: formData.transactionId || `UPI-${Date.now()}`,
+        transactionId: utr,
         paymentMethod: 'UPI'
       });
 
       if (res.data.success) {
+        registrationRecord = res.data.registration;
+        
+        // If payment screenshot was attached, upload screenshot file as well
+        if (paymentFile && registrationRecord?.registrationId) {
+          try {
+            const uploadData = new FormData();
+            uploadData.append('registrationId', registrationRecord.registrationId);
+            uploadData.append('transactionId', utr);
+            uploadData.append('amount', 300);
+            uploadData.append('screenshot', paymentFile);
+            await submitPayment(uploadData);
+          } catch (uploadErr) {
+            console.warn('[Screenshot Upload Warning]', uploadErr);
+          }
+        }
+
         await refreshRegistration();
-        onSuccess(res.data.registration);
+        onSuccess(registrationRecord);
         onClose();
       }
     } catch (err) {
@@ -151,7 +201,7 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
           marginBottom: '20px',
           display: 'flex',
           alignItems: 'center',
-          justify: 'space-between',
+          justifyContent: 'space-between',
           fontSize: '0.85rem'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#F97316', fontWeight: 600 }}>
@@ -195,7 +245,7 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
 
         {step === 1 ? (
           <form onSubmit={handleNextToPayment}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+            <div className="form-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
               <div className="form-group">
                 <label>Full Name (From Google)</label>
                 <input
@@ -220,7 +270,7 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+            <div className="form-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
               <div className="form-group">
                 <label>Student Roll No / ID</label>
                 <input
@@ -248,7 +298,7 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+            <div className="form-grid-3" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
               <div className="form-group">
                 <label>Department</label>
                 <select name="department" className="form-control" value={formData.department} onChange={handleChange}>
@@ -273,15 +323,19 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
               </div>
 
               <div className="form-group">
-                <label>Section</label>
+                <label>Section (e.g. 24S01)</label>
                 <input
                   type="text"
                   name="section"
                   className="form-control"
+                  placeholder="e.g. 24S01"
                   value={formData.section}
                   onChange={handleChange}
                   required
                 />
+                <span style={{ fontSize: '0.72rem', color: '#94A3B8', marginTop: '2px', display: 'block' }}>
+                  e.g. 24S01, 23S01, S01
+                </span>
               </div>
             </div>
 
@@ -322,16 +376,88 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
               </div>
             </div>
 
-            <div className="form-group">
-              <label>UPI Reference / Transaction ID (Optional for instant test)</label>
+            {/* Payment Screenshot Upload Field */}
+            <div className="form-group" style={{ marginBottom: '18px' }}>
+              <label style={{ display: 'block', fontSize: '0.88rem', color: '#FFF', fontWeight: 700, marginBottom: '6px' }}>
+                1. Upload Payment Screenshot / Receipt (Optional / Recommended)
+              </label>
+              
+              <div style={{
+                border: '2px dashed rgba(249, 115, 22, 0.35)',
+                borderRadius: '12px',
+                padding: '16px',
+                textAlign: 'center',
+                cursor: 'pointer',
+                background: 'rgba(15, 23, 42, 0.7)',
+                position: 'relative'
+              }}>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    opacity: 0,
+                    cursor: 'pointer'
+                  }}
+                />
+
+                {paymentPreviewUrl ? (
+                  <div>
+                    <img
+                      src={paymentPreviewUrl}
+                      alt="Payment Receipt Preview"
+                      style={{ maxHeight: '120px', borderRadius: '8px', margin: '0 auto 6px auto', display: 'block', border: '1px solid rgba(255,255,255,0.2)' }}
+                    />
+                    <span style={{ fontSize: '0.82rem', color: '#34D399', fontWeight: 700 }}>
+                      ✓ Screenshot Selected: {paymentFile.name}
+                    </span>
+                  </div>
+                ) : (
+                  <div>
+                    <Upload size={28} color="#F97316" style={{ margin: '0 auto 6px auto', display: 'block' }} />
+                    <p style={{ color: '#FFF', fontSize: '0.88rem', fontWeight: 600 }}>
+                      Click or drag payment screenshot here
+                    </p>
+                    <p style={{ color: '#94A3B8', fontSize: '0.75rem', marginTop: '2px' }}>
+                      Upload GPay / PhonePe / Paytm payment screenshot
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 12-Digit UTR Number Input */}
+            <div className="form-group" style={{ marginBottom: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <label style={{ fontSize: '0.88rem', color: '#FFF', fontWeight: 700 }}>
+                  2. UPI UTR / Transaction Reference ID (Exact 12 Digits)
+                </label>
+                <span style={{
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  color: formData.transactionId.length === 12 ? '#34D399' : '#F97316'
+                }}>
+                  {formData.transactionId.length} / 12 digits
+                </span>
+              </div>
               <input
                 type="text"
                 name="transactionId"
                 className="form-control"
-                placeholder="e.g. 423984729384"
+                placeholder="e.g. 123456789012"
+                maxLength={12}
                 value={formData.transactionId}
                 onChange={handleChange}
+                required
               />
+              <span style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: '4px', display: 'block' }}>
+                Must be exactly 12 numeric digits from your UPI payment app receipt
+              </span>
             </div>
 
             <div style={{ display: 'flex', gap: '12px' }}>

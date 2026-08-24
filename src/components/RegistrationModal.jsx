@@ -12,7 +12,7 @@ const RegistrationModal = ({ isOpen, onClose, onSuccess }) => {
     studentId: '',
     department: 'CSE',
     year: '3rd Year',
-    section: 'A',
+    section: '24S01',
     residency: 'Day Scholar'
   });
   
@@ -105,7 +105,7 @@ const RegistrationModal = ({ isOpen, onClose, onSuccess }) => {
 
         <form onSubmit={handleSubmit}>
           
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div className="form-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div className="form-group">
               <label>Full Name (From Google Account)</label>
               <input
@@ -132,14 +132,14 @@ const RegistrationModal = ({ isOpen, onClose, onSuccess }) => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div className="form-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div className="form-group">
               <label>Student Roll Number / ID</label>
               <input
                 type="text"
                 name="studentId"
                 className="form-control"
-                placeholder="e.g. 9921004123"
+                placeholder="e.g. 2400030123"
                 value={formData.studentId}
                 onChange={handleChange}
                 required
@@ -160,7 +160,7 @@ const RegistrationModal = ({ isOpen, onClose, onSuccess }) => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+          <div className="form-grid-3" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
             <div className="form-group">
               <label>Department</label>
               <select name="department" className="form-control" value={formData.department} onChange={handleChange}>
@@ -186,15 +186,19 @@ const RegistrationModal = ({ isOpen, onClose, onSuccess }) => {
             </div>
 
             <div className="form-group">
-              <label>Section</label>
+              <label>Section (e.g. 24S01)</label>
               <input
                 type="text"
                 name="section"
                 className="form-control"
+                placeholder="e.g. 24S01"
                 value={formData.section}
                 onChange={handleChange}
                 required
               />
+              <span style={{ fontSize: '0.72rem', color: '#94A3B8', marginTop: '2px', display: 'block' }}>
+                e.g. 24S01, 23S01, S01
+              </span>
             </div>
           </div>
 

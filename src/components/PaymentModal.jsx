@@ -14,6 +14,12 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
 
   if (!isOpen) return null;
 
+  const handleTransactionIdChange = (e) => {
+    // Only numeric digits, max 12 digits
+    const cleanVal = e.target.value.replace(/\D/g, '').slice(0, 12);
+    setTransactionId(cleanVal);
+  };
+
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
     if (selectedFile) {
@@ -33,8 +39,11 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
       setError('Please upload your payment screenshot proof first.');
       return;
     }
-    if (!transactionId.trim()) {
-      setError('Please enter the UPI Transaction / UTR Reference Number.');
+    
+    // Validate exact 12-digit UTR
+    const utr = transactionId ? transactionId.trim() : '';
+    if (!utr || utr.length !== 12 || !/^\d{12}$/.test(utr)) {
+      setError('UPI Reference / UTR Number must be exactly 12 numeric digits (e.g. 123456789012).');
       return;
     }
 
@@ -44,8 +53,8 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
     try {
       const formData = new FormData();
       formData.append('registrationId', registrationId);
-      formData.append('transactionId', transactionId.trim());
-      formData.append('amount', 250);
+      formData.append('transactionId', utr);
+      formData.append('amount', 300);
       formData.append('screenshot', file);
 
       const res = await submitPayment(formData);
@@ -55,7 +64,7 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
         onClose();
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to submit payment. Please try again.');
+      setError(err.response?.data?.message || 'Failed to submit payment proof. Please check your inputs.');
     } finally {
       setLoading(false);
     }
@@ -63,7 +72,7 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
 
   return (
     <div className="modal-overlay">
-      <div className="modal-content" style={{ maxWidth: '540px' }}>
+      <div className="modal-content" style={{ maxWidth: '540px', borderRadius: '24px' }}>
         
         <button
           onClick={onClose}
@@ -92,38 +101,39 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
         <div style={{
           background: 'rgba(255, 255, 255, 0.03)',
           border: '1px solid rgba(255, 255, 255, 0.1)',
-          borderRadius: '12px',
-          padding: '20px',
+          borderRadius: '16px',
+          padding: '18px',
           marginBottom: '20px',
           display: 'flex',
-          gap: '20px',
-          alignItems: 'center'
+          gap: '16px',
+          alignItems: 'center',
+          flexWrap: 'wrap'
         }}>
           {/* UPI QR Code */}
           <div style={{
             background: '#FFF',
             padding: '10px',
-            borderRadius: '8px',
-            width: '120px',
-            height: '120px',
+            borderRadius: '12px',
+            width: '110px',
+            height: '110px',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0
           }}>
-            <QrCode size={80} color="#0F172A" />
-            <span style={{ fontSize: '0.65rem', color: '#0F172A', fontWeight: 700 }}>SCAN TO PAY ₹250</span>
+            <QrCode size={75} color="#0F172A" />
+            <span style={{ fontSize: '0.65rem', color: '#0F172A', fontWeight: 800 }}>SCAN TO PAY ₹300</span>
           </div>
 
-          <div>
-            <h4 style={{ color: '#FFF', marginBottom: '6px' }}>Payment Instructions</h4>
-            <p style={{ color: '#94A3B8', fontSize: '0.85rem', marginBottom: '6px' }}>
+          <div style={{ flex: 1, minWidth: '200px' }}>
+            <h4 style={{ color: '#FFF', marginBottom: '6px', fontSize: '0.95rem' }}>Payment Instructions</h4>
+            <p style={{ color: '#94A3B8', fontSize: '0.82rem', marginBottom: '6px', lineHeight: 1.4 }}>
               1. Scan QR code using GPay, PhonePe, or Paytm.<br />
-              2. Pay exact fee: <strong style={{ color: '#F97316' }}>₹250</strong>.<br />
-              3. Take a screenshot of the payment receipt & enter 12-digit UTR ID.
+              2. Pay registration fee: <strong style={{ color: '#F97316' }}>₹300</strong>.<br />
+              3. Upload payment screenshot & enter 12-digit UTR ID.
             </p>
-            <div style={{ fontSize: '0.85rem', color: '#38BDF8' }}>
+            <div style={{ fontSize: '0.85rem', color: '#38BDF8', fontWeight: 700 }}>
               UPI ID: <strong>ieee.kare@upi</strong>
             </div>
           </div>
@@ -133,16 +143,16 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
           <div style={{
             background: 'rgba(239, 68, 68, 0.15)',
             border: '1px solid rgba(239, 68, 68, 0.3)',
-            borderRadius: '8px',
+            borderRadius: '10px',
             padding: '12px',
-            marginBottom: '20px',
+            marginBottom: '18px',
             color: '#F87171',
             fontSize: '0.875rem',
             display: 'flex',
             alignItems: 'center',
             gap: '8px'
           }}>
-            <AlertCircle size={18} />
+            <AlertCircle size={18} flexShrink={0} />
             <span>{error}</span>
           </div>
         )}
@@ -152,18 +162,17 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
           {/* FIRST: Upload Payment Screenshot Proof */}
           <div className="form-group" style={{ marginBottom: '18px' }}>
             <label style={{ display: 'block', fontSize: '0.88rem', color: '#FFF', fontWeight: 700, marginBottom: '6px' }}>
-              1. Upload Payment Screenshot Proof (JPG, PNG, WEBP, PDF &lt; 5MB)
+              1. Upload Payment Screenshot / Receipt (PNG, JPG, WEBP &lt; 5MB)
             </label>
             
             <div style={{
               border: '2px dashed rgba(249, 115, 22, 0.35)',
-              borderRadius: '12px',
-              padding: '24px',
+              borderRadius: '14px',
+              padding: '20px',
               textAlign: 'center',
               cursor: 'pointer',
               background: 'rgba(15, 23, 42, 0.7)',
-              position: 'relative',
-              transition: 'border-color 0.2s'
+              position: 'relative'
             }}>
               <input
                 type="file"
@@ -186,7 +195,7 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
                   <img
                     src={previewUrl}
                     alt="Payment Screenshot Preview"
-                    style={{ maxHeight: '140px', borderRadius: '8px', margin: '0 auto 8px auto', display: 'block', border: '1px solid rgba(255,255,255,0.2)' }}
+                    style={{ maxHeight: '130px', borderRadius: '8px', margin: '0 auto 8px auto', display: 'block', border: '1px solid rgba(255,255,255,0.2)' }}
                   />
                   <span style={{ fontSize: '0.85rem', color: '#34D399', fontWeight: 700 }}>
                     ✓ Screenshot Selected: {file.name}
@@ -194,12 +203,12 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
                 </div>
               ) : (
                 <div>
-                  <Upload size={34} color="#F97316" style={{ margin: '0 auto 8px auto', display: 'block' }} />
-                  <p style={{ color: '#FFF', fontSize: '0.92rem', fontWeight: 700 }}>
+                  <Upload size={32} color="#F97316" style={{ margin: '0 auto 6px auto', display: 'block' }} />
+                  <p style={{ color: '#FFF', fontSize: '0.9rem', fontWeight: 700 }}>
                     Click or drag payment screenshot here
                   </p>
-                  <p style={{ color: '#94A3B8', fontSize: '0.78rem', marginTop: '4px' }}>
-                    Upload GPay, PhonePe, Paytm or Netbanking payment receipt screenshot
+                  <p style={{ color: '#94A3B8', fontSize: '0.78rem', marginTop: '2px' }}>
+                    Upload GPay, PhonePe, Paytm, or Netbanking payment receipt screenshot
                   </p>
                 </div>
               )}
@@ -208,17 +217,30 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
 
           {/* SECOND: UTR / UPI Transaction Reference Number */}
           <div className="form-group" style={{ marginBottom: '22px' }}>
-            <label style={{ display: 'block', fontSize: '0.88rem', color: '#FFF', fontWeight: 700, marginBottom: '6px' }}>
-              2. UPI / UTR Transaction Reference ID (12 digits)
-            </label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <label style={{ fontSize: '0.88rem', color: '#FFF', fontWeight: 700 }}>
+                2. UPI / UTR Reference Number (Exact 12 Digits)
+              </label>
+              <span style={{
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                color: transactionId.length === 12 ? '#34D399' : '#F97316'
+              }}>
+                {transactionId.length} / 12 digits
+              </span>
+            </div>
             <input
               type="text"
               className="form-control"
-              placeholder="e.g. 425619873012"
+              placeholder="e.g. 123456789012"
+              maxLength={12}
               value={transactionId}
-              onChange={(e) => setTransactionId(e.target.value)}
+              onChange={handleTransactionIdChange}
               required
             />
+            <span style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: '4px', display: 'block' }}>
+              Enter the exact 12-digit UTR / UPI Reference Number from your payment app receipt
+            </span>
           </div>
 
           <button
