@@ -18,7 +18,11 @@ const {
   deleteAnnouncement,
   getGallery,
   addGalleryItem,
-  deleteGalleryItem
+  deleteGalleryItem,
+  deleteRegistrationRecord,
+  deleteAllRegistrations,
+  bulkApprovePayments,
+  directRegistrationAdmin
 } = require('../controllers/adminController');
 const { protect } = require('../middleware/authMiddleware');
 const { adminOnly } = require('../middleware/adminMiddleware');
@@ -30,8 +34,12 @@ router.use(adminOnly);
 router.get('/dashboard', getDashboardStats);
 router.get('/registrations', getRegistrationsList);
 router.get('/participants/search', searchParticipants);
+router.post('/registrations/direct', directRegistrationAdmin);
+router.delete('/registrations/:id', deleteRegistrationRecord);
+router.delete('/registrations', deleteAllRegistrations);
 
 // Payment Approvals
+router.put('/payments/bulk-verify', bulkApprovePayments);
 router.put('/payments/:id/approve', approvePayment);
 router.put('/payments/:id/reject', rejectPayment);
 

@@ -553,6 +553,122 @@ const deleteGalleryItem = async (req, res) => {
   }
 };
 
+const deleteRegistrationRecord = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const reg = await Registration.findOne({
+      $or: [
+        { _id: mongoose.Types.ObjectId.isValid(id) ? id : null },
+        { registrationId: id }
+      ]
+    });
+    if (!reg) {
+      return res.status(404).json({ success: false, message: 'Registration record not found' });
+    }
+    const regId = reg.registrationId;
+    await Registration.deleteOne({ _id: reg._id });
+    await Payment.deleteMany({ registrationId: regId });
+    await Ticket.deleteMany({ registrationId: regId });
+    await Attendance.deleteMany({ registrationId: regId });
+    await Certificate.deleteMany({ registrationId: regId });
+    return res.status(200).json({ success: true, message: 'Registration record deleted successfully' });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const deleteAllRegistrations = async (req, res) => {
+  try {
+    await Registration.deleteMany({});
+    await Payment.deleteMany({});
+    await Ticket.deleteMany({});
+    await Attendance.deleteMany({});
+    await Certificate.deleteMany({});
+    return res.status(200).json({ success: true, message: 'All registration records cleared successfully' });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const bulkApprovePayments = async (req, res) => {
+  try {
+    const pendingPayments = await Payment.find({ status: 'PENDING' });
+    const regIds = pendingPayments.map(p => p.registrationId);
+
+    await Payment.updateMany({ status: 'PENDING' }, { $set: { status: 'VERIFIED', verifiedAt: Date.now() } });
+    await Registration.updateMany(
+      { registrationId: { $in: regIds } },
+      { $set: { status: 'PAYMENT_VERIFIED', paymentStatus: 'VERIFIED', seatStatus: 'CONFIRMED' } }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: `Successfully verified ${pendingPayments.length} pending payments!`
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const directRegistrationAdmin = async (req, res) => {
+  try {
+    const { fullName, email, phone, studentId, department, year, section, residency } = req.body;
+
+    if (!fullName || !email || !studentId || !phone) {
+      return res.status(400).json({ success: false, message: 'Name, Email, Student ID, and Phone are required' });
+    }
+
+    const count = await Registration.countDocuments();
+    const nextSeq = (count + 1).toString().padStart(4, '0');
+    const registrationId = `KLU-ML-2026-${nextSeq}`;
+
+    let user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      user = await User.create({
+        name: fullName,
+        email: email.toLowerCase(),
+        role: 'participant'
+      });
+    }
+
+    const newReg = await Registration.create({
+      registrationId,
+      userId: user._id,
+      eventId: user._id,
+      fullName,
+      email: email.toLowerCase(),
+      phone,
+      studentId,
+      department: department || 'CSE',
+      year: year || '3rd Year',
+      section: section || '24S01',
+      residency: residency || 'Day Scholar',
+      status: 'PAYMENT_VERIFIED',
+      paymentStatus: 'VERIFIED',
+      seatStatus: 'CONFIRMED'
+    });
+
+    await Payment.create({
+      registrationId,
+      userId: user._id,
+      amount: 300,
+      transactionId: `DIRECT-ADMIN-${Date.now()}`,
+      screenshotUrl: '/uploads/manual_admin_approval.png',
+      status: 'VERIFIED',
+      submittedAt: Date.now(),
+      verifiedAt: Date.now()
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Direct registration completed successfully!',
+      registration: newReg
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   getDashboardStats,
   getRegistrationsList,
@@ -571,5 +687,9 @@ module.exports = {
   deleteAnnouncement,
   getGallery,
   addGalleryItem,
-  deleteGalleryItem
+  deleteGalleryItem,
+  deleteRegistrationRecord,
+  deleteAllRegistrations,
+  bulkApprovePayments,
+  directRegistrationAdmin
 };

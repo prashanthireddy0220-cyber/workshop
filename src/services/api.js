@@ -63,6 +63,10 @@ export const updateEventConfig = (config) => api.put('/admin/event/config', conf
 export const approvePayment = (id) => api.put(`/admin/payments/${id}/approve`);
 export const rejectPayment = (id, rejectionReason) => api.put(`/admin/payments/${id}/reject`, { rejectionReason });
 export const searchParticipants = (q) => api.get('/admin/participants/search', { params: { q } });
+export const directRegisterAdmin = (data) => api.post('/admin/registrations/direct', data);
+export const bulkVerifyPayments = () => api.put('/admin/payments/bulk-verify');
+export const deleteRegistrationAdmin = (id) => api.delete(`/admin/registrations/${id}`);
+export const deleteAllRegistrationsAdmin = () => api.delete('/admin/registrations');
 
 // Workshop Management API
 export const getAdminWorkshops = () => api.get('/admin/workshops');
