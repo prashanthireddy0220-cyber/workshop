@@ -320,8 +320,8 @@ const AdminControlCenter = () => {
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#EDF2F7',
-      color: '#1A202C',
+      background: 'radial-gradient(ellipse at top, #0F172A 0%, #070D1B 100%)',
+      color: '#F8FAFC',
       fontFamily: "'Inter', sans-serif",
       padding: '24px 32px'
     }}>
@@ -329,14 +329,16 @@ const AdminControlCenter = () => {
       <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
 
         {/* ==========================================================================
-           TOP HEADER & CONTROL CENTER BANNER
+           TOP HEADER & CONTROL CENTER BANNER (Dark Website Theme)
            ========================================================================== */}
         <div style={{
-          background: '#FFFFFF',
+          background: 'rgba(15, 23, 42, 0.8)',
+          backdropFilter: 'blur(16px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
           borderRadius: '24px',
           padding: '28px 36px',
           marginBottom: '28px',
-          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.04), 0 2px 6px rgba(0, 0, 0, 0.02)',
+          boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
           display: 'flex',
           flexWrap: 'wrap',
           alignItems: 'center',
@@ -344,10 +346,10 @@ const AdminControlCenter = () => {
           gap: '20px'
         }}>
           <div>
-            <h1 style={{ fontSize: '1.9rem', fontWeight: 900, color: '#0F172A', letterSpacing: '-0.02em', margin: 0 }}>
+            <h1 style={{ fontSize: '1.9rem', fontWeight: 900, color: '#FFFFFF', letterSpacing: '-0.02em', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
               ADMIN CONTROL CENTER
             </h1>
-            <p style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748B', letterSpacing: '0.05em', textTransform: 'uppercase', marginTop: '4px' }}>
+            <p style={{ fontSize: '0.85rem', fontWeight: 700, color: '#38BDF8', letterSpacing: '0.05em', textTransform: 'uppercase', marginTop: '4px' }}>
               IEEE KARE • INTELLIGENT YIELD PREDICTION & AI/ML WORKSHOP
             </p>
           </div>
@@ -358,7 +360,7 @@ const AdminControlCenter = () => {
             <button
               onClick={() => setDirectRegOpen(true)}
               style={{
-                background: '#2563EB',
+                background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
                 color: '#FFFFFF',
                 border: 'none',
                 padding: '10px 20px',
@@ -369,7 +371,7 @@ const AdminControlCenter = () => {
                 alignItems: 'center',
                 gap: '8px',
                 cursor: 'pointer',
-                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
+                boxShadow: '0 4px 14px rgba(249, 115, 22, 0.35)',
                 transition: 'all 0.2s ease'
               }}
             >
@@ -380,9 +382,9 @@ const AdminControlCenter = () => {
             <button
               onClick={() => setAttendanceModalOpen(true)}
               style={{
-                background: '#F1F5F9',
-                color: '#334155',
-                border: '1px solid #E2E8F0',
+                background: 'rgba(255, 255, 255, 0.05)',
+                color: '#F8FAFC',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
                 padding: '10px 18px',
                 borderRadius: '9999px',
                 fontWeight: 600,
@@ -390,19 +392,20 @@ const AdminControlCenter = () => {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '8px',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
               }}
             >
-              <UserCheck size={16} color="#2563EB" /> Attendance Sessions
+              <UserCheck size={16} color="#38BDF8" /> Attendance Sessions
             </button>
 
             {/* Event Settings Button */}
             <button
               onClick={() => setSettingsOpen(true)}
               style={{
-                background: '#F1F5F9',
-                color: '#334155',
-                border: '1px solid #E2E8F0',
+                background: 'rgba(255, 255, 255, 0.05)',
+                color: '#F8FAFC',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
                 padding: '10px 18px',
                 borderRadius: '9999px',
                 fontWeight: 600,
@@ -413,16 +416,16 @@ const AdminControlCenter = () => {
                 cursor: 'pointer'
               }}
             >
-              <Settings size={16} color="#2563EB" /> Event Settings
+              <Settings size={16} color="#38BDF8" /> Event Settings
             </button>
 
             {/* QR Code Button */}
             <button
               onClick={() => setQrModalOpen(true)}
               style={{
-                background: '#F1F5F9',
-                color: '#334155',
-                border: '1px solid #E2E8F0',
+                background: 'rgba(255, 255, 255, 0.05)',
+                color: '#F8FAFC',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
                 padding: '10px 18px',
                 borderRadius: '9999px',
                 fontWeight: 600,
@@ -433,16 +436,16 @@ const AdminControlCenter = () => {
                 cursor: 'pointer'
               }}
             >
-              <QrCode size={16} color="#2563EB" /> QR Code Scanner
+              <QrCode size={16} color="#38BDF8" /> QR Code Scanner
             </button>
 
             {/* STATUS: OPEN / CLOSED Badge Toggle Button */}
             <button
               onClick={handleToggleStatus}
               style={{
-                background: eventSettings.registrationOpen ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                background: eventSettings.registrationOpen ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
                 border: eventSettings.registrationOpen ? '1px solid rgba(34, 197, 94, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)',
-                color: eventSettings.registrationOpen ? '#16A34A' : '#DC2626',
+                color: eventSettings.registrationOpen ? '#4ADE80' : '#F87171',
                 padding: '9px 18px',
                 borderRadius: '9999px',
                 fontWeight: 800,
@@ -462,9 +465,9 @@ const AdminControlCenter = () => {
               onClick={logout}
               title="Logout from Admin"
               style={{
-                background: '#F1F5F9',
-                border: '1px solid #E2E8F0',
-                color: '#64748B',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                color: '#94A3B8',
                 width: '38px',
                 height: '38px',
                 borderRadius: '50%',
@@ -480,7 +483,7 @@ const AdminControlCenter = () => {
         </div>
 
         {/* ==========================================================================
-           METRIC STAT CARDS ROW
+           METRIC STAT CARDS ROW (Dark Theme Glassmorphic Cards)
            ========================================================================== */}
         <div style={{
           display: 'grid',
@@ -490,74 +493,74 @@ const AdminControlCenter = () => {
         }}>
           
           {/* Card 1: TOTAL REGISTRATIONS */}
-          <div style={{ background: '#FFFFFF', borderRadius: '20px', padding: '24px', boxShadow: '0 8px 24px rgba(0,0,0,0.03)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div style={{ background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '20px', padding: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
-              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748B', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#94A3B8', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                 TOTAL REGISTRATIONS
               </span>
-              <div style={{ fontSize: '2.4rem', fontWeight: 900, color: '#0F172A', marginTop: '6px' }}>
+              <div style={{ fontSize: '2.4rem', fontWeight: 900, color: '#FFFFFF', marginTop: '6px' }}>
                 {stats.totalRegistrations}
               </div>
               <div style={{ fontSize: '0.8rem', marginTop: '6px', display: 'flex', gap: '12px' }}>
-                <span style={{ color: '#16A34A', fontWeight: 700 }}>Approved: {stats.confirmedRegistrations}</span>
-                <span style={{ color: '#EA580C', fontWeight: 700 }}>Pending: {stats.pendingPayments}</span>
+                <span style={{ color: '#4ADE80', fontWeight: 700 }}>Approved: {stats.confirmedRegistrations}</span>
+                <span style={{ color: '#FB923C', fontWeight: 700 }}>Pending: {stats.pendingPayments}</span>
               </div>
             </div>
-            <div style={{ background: '#EFF6FF', padding: '12px', borderRadius: '50%', color: '#2563EB' }}>
+            <div style={{ background: 'rgba(56, 189, 248, 0.15)', padding: '12px', borderRadius: '50%', color: '#38BDF8' }}>
               <Users size={22} />
             </div>
           </div>
 
           {/* Card 2: REMAINING SPOTS */}
-          <div style={{ background: '#FFFFFF', borderRadius: '20px', padding: '24px', boxShadow: '0 8px 24px rgba(0,0,0,0.03)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div style={{ background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '20px', padding: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
-              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748B', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#94A3B8', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                 REMAINING SPOTS
               </span>
-              <div style={{ fontSize: '2.4rem', fontWeight: 900, color: '#0F172A', marginTop: '6px' }}>
-                {stats.remainingSeats} <span style={{ fontSize: '1.2rem', color: '#94A3B8', fontWeight: 700 }}>/ {stats.capacity}</span>
+              <div style={{ fontSize: '2.4rem', fontWeight: 900, color: '#FFFFFF', marginTop: '6px' }}>
+                {stats.remainingSeats} <span style={{ fontSize: '1.2rem', color: '#64748B', fontWeight: 700 }}>/ {stats.capacity}</span>
               </div>
-              <div style={{ fontSize: '0.8rem', color: '#64748B', fontWeight: 600, marginTop: '6px' }}>
+              <div style={{ fontSize: '0.8rem', color: '#94A3B8', fontWeight: 600, marginTop: '6px' }}>
                 Cap: {stats.capacity} Participants
               </div>
             </div>
-            <div style={{ background: '#EFF6FF', padding: '12px', borderRadius: '50%', color: '#2563EB' }}>
+            <div style={{ background: 'rgba(56, 189, 248, 0.15)', padding: '12px', borderRadius: '50%', color: '#38BDF8' }}>
               <Clock size={22} />
             </div>
           </div>
 
           {/* Card 3: TOTAL FEE REVENUE */}
-          <div style={{ background: '#FFFFFF', borderRadius: '20px', padding: '24px', boxShadow: '0 8px 24px rgba(0,0,0,0.03)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div style={{ background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '20px', padding: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
-              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748B', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#94A3B8', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                 TOTAL FEE REVENUE
               </span>
-              <div style={{ fontSize: '2.4rem', fontWeight: 900, color: '#16A34A', marginTop: '6px' }}>
+              <div style={{ fontSize: '2.4rem', fontWeight: 900, color: '#4ADE80', marginTop: '6px' }}>
                 ₹{stats.totalRevenue.toLocaleString()}
               </div>
-              <div style={{ fontSize: '0.8rem', color: '#64748B', fontWeight: 600, marginTop: '6px' }}>
+              <div style={{ fontSize: '0.8rem', color: '#94A3B8', fontWeight: 600, marginTop: '6px' }}>
                 Verified Payments @ ₹300/student
               </div>
             </div>
-            <div style={{ background: '#DCFCE7', padding: '12px', borderRadius: '50%', color: '#16A34A' }}>
+            <div style={{ background: 'rgba(34, 197, 94, 0.15)', padding: '12px', borderRadius: '50%', color: '#4ADE80' }}>
               <IndianRupee size={22} />
             </div>
           </div>
 
           {/* Card 4: TODAY'S SUBMISSIONS */}
-          <div style={{ background: '#FFFFFF', borderRadius: '20px', padding: '24px', boxShadow: '0 8px 24px rgba(0,0,0,0.03)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div style={{ background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '20px', padding: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
-              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748B', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#94A3B8', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                 TODAY'S SUBMISSIONS
               </span>
-              <div style={{ fontSize: '2.4rem', fontWeight: 900, color: '#2563EB', marginTop: '6px' }}>
+              <div style={{ fontSize: '2.4rem', fontWeight: 900, color: '#38BDF8', marginTop: '6px' }}>
                 +{stats.todaySubmissions}
               </div>
-              <div style={{ fontSize: '0.8rem', color: '#64748B', fontWeight: 600, marginTop: '6px' }}>
+              <div style={{ fontSize: '0.8rem', color: '#94A3B8', fontWeight: 600, marginTop: '6px' }}>
                 Live submission rate
               </div>
             </div>
-            <div style={{ background: '#EFF6FF', padding: '12px', borderRadius: '50%', color: '#2563EB' }}>
+            <div style={{ background: 'rgba(56, 189, 248, 0.15)', padding: '12px', borderRadius: '50%', color: '#38BDF8' }}>
               <TrendingUp size={22} />
             </div>
           </div>
@@ -567,76 +570,76 @@ const AdminControlCenter = () => {
         {/* ==========================================================================
            SEARCH, FILTER & ACTION BAR
            ========================================================================== */}
-        <div style={{ background: '#FFFFFF', borderRadius: '24px', padding: '24px 28px', marginBottom: '28px', boxShadow: '0 8px 24px rgba(0, 0, 0, 0.03)' }}>
+        <div style={{ background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '24px', padding: '24px 28px', marginBottom: '28px', boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: 900, color: '#0F172A', margin: 0, textTransform: 'uppercase', letterSpacing: '-0.01em' }}>
-              STUDENT REGISTRATION RECORDS <span style={{ color: '#64748B', fontSize: '0.9rem', fontWeight: 600 }}>({registrations.length} Total)</span>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 900, color: '#FFFFFF', margin: 0, textTransform: 'uppercase', letterSpacing: '-0.01em' }}>
+              STUDENT REGISTRATION RECORDS <span style={{ color: '#94A3B8', fontSize: '0.9rem', fontWeight: 600 }}>({registrations.length} Total)</span>
             </h3>
           </div>
 
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '14px' }}>
             <div style={{ position: 'relative', flex: '1 1 280px', minWidth: '240px' }}>
-              <Search size={18} color="#94A3B8" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+              <Search size={18} color="#64748B" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
               <input
                 type="text"
                 placeholder="Search by Participant ID, Name, Roll No..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                style={{ width: '100%', padding: '10px 14px 10px 42px', borderRadius: '9999px', border: '1px solid #E2E8F0', background: '#F8FAFC', fontSize: '0.88rem', outline: 'none' }}
+                style={{ width: '100%', padding: '10px 14px 10px 42px', borderRadius: '9999px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFFFFF', fontSize: '0.88rem', outline: 'none' }}
               />
             </div>
 
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ padding: '10px 16px', borderRadius: '9999px', border: '1px solid #E2E8F0', background: '#F8FAFC', fontSize: '0.88rem', fontWeight: 600, color: '#334155' }}>
-              <option value="">Status: All</option>
-              <option value="PAYMENT_VERIFIED">Approved</option>
-              <option value="PAYMENT_SUBMITTED">Pending Verification</option>
-              <option value="REJECTED">Rejected</option>
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ padding: '10px 16px', borderRadius: '9999px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#F8FAFC', fontSize: '0.88rem', fontWeight: 600 }}>
+              <option value="" style={{ background: '#0F172A' }}>Status: All</option>
+              <option value="PAYMENT_VERIFIED" style={{ background: '#0F172A' }}>Approved</option>
+              <option value="PAYMENT_SUBMITTED" style={{ background: '#0F172A' }}>Pending Verification</option>
+              <option value="REJECTED" style={{ background: '#0F172A' }}>Rejected</option>
             </select>
 
-            <select value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)} style={{ padding: '10px 16px', borderRadius: '9999px', border: '1px solid #E2E8F0', background: '#F8FAFC', fontSize: '0.88rem', fontWeight: 600, color: '#334155' }}>
-              <option value="">Dept: All</option>
-              <option value="CSE">CSE</option>
-              <option value="AI & DS">AI & DS</option>
-              <option value="IT">IT</option>
-              <option value="ECE">ECE</option>
-              <option value="EEE">EEE</option>
-              <option value="Mechanical">Mechanical</option>
-              <option value="Civil">Civil</option>
+            <select value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)} style={{ padding: '10px 16px', borderRadius: '9999px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#F8FAFC', fontSize: '0.88rem', fontWeight: 600 }}>
+              <option value="" style={{ background: '#0F172A' }}>Dept: All</option>
+              <option value="CSE" style={{ background: '#0F172A' }}>CSE</option>
+              <option value="AI & DS" style={{ background: '#0F172A' }}>AI & DS</option>
+              <option value="IT" style={{ background: '#0F172A' }}>IT</option>
+              <option value="ECE" style={{ background: '#0F172A' }}>ECE</option>
+              <option value="EEE" style={{ background: '#0F172A' }}>EEE</option>
+              <option value="Mechanical" style={{ background: '#0F172A' }}>Mechanical</option>
+              <option value="Civil" style={{ background: '#0F172A' }}>Civil</option>
             </select>
 
-            <select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} style={{ padding: '10px 16px', borderRadius: '9999px', border: '1px solid #E2E8F0', background: '#F8FAFC', fontSize: '0.88rem', fontWeight: 600, color: '#334155' }}>
-              <option value="">Year: All</option>
-              <option value="1st Year">1st Year</option>
-              <option value="2nd Year">2nd Year</option>
-              <option value="3rd Year">3rd Year</option>
-              <option value="4th Year">4th Year</option>
+            <select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} style={{ padding: '10px 16px', borderRadius: '9999px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#F8FAFC', fontSize: '0.88rem', fontWeight: 600 }}>
+              <option value="" style={{ background: '#0F172A' }}>Year: All</option>
+              <option value="1st Year" style={{ background: '#0F172A' }}>1st Year</option>
+              <option value="2nd Year" style={{ background: '#0F172A' }}>2nd Year</option>
+              <option value="3rd Year" style={{ background: '#0F172A' }}>3rd Year</option>
+              <option value="4th Year" style={{ background: '#0F172A' }}>4th Year</option>
             </select>
 
-            <button onClick={() => setDirectRegOpen(true)} style={{ background: '#2563EB', color: '#FFFFFF', border: 'none', padding: '10px 18px', borderRadius: '9999px', fontWeight: 700, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+            <button onClick={() => setDirectRegOpen(true)} style={{ background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)', color: '#FFFFFF', border: 'none', padding: '10px 18px', borderRadius: '9999px', fontWeight: 700, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
               <Plus size={15} /> + DIRECT REGISTRATION
             </button>
 
-            <button onClick={handleBulkVerify} style={{ background: '#DCFCE7', color: '#16A34A', border: '1px solid #BBF7D0', padding: '10px 16px', borderRadius: '9999px', fontWeight: 700, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+            <button onClick={handleBulkVerify} style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ADE80', border: '1px solid rgba(34, 197, 94, 0.3)', padding: '10px 16px', borderRadius: '9999px', fontWeight: 700, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
               <CheckCircle2 size={15} /> VERIFY ALL
             </button>
 
-            <button onClick={handleExportCSV} style={{ background: '#F1F5F9', color: '#0284C7', border: '1px solid #E2E8F0', padding: '10px 16px', borderRadius: '9999px', fontWeight: 700, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+            <button onClick={handleExportCSV} style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38BDF8', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '10px 16px', borderRadius: '9999px', fontWeight: 700, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
               <FileSpreadsheet size={15} /> Excel / CSV
             </button>
 
-            <button onClick={handleDeleteAll} style={{ background: '#FEE2E2', color: '#DC2626', border: '1px solid #FCA5A5', padding: '10px 16px', borderRadius: '9999px', fontWeight: 700, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+            <button onClick={handleDeleteAll} style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#F87171', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '10px 16px', borderRadius: '9999px', fontWeight: 700, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
               <Trash2 size={15} /> DELETE ALL
             </button>
           </div>
         </div>
 
         {/* ==========================================================================
-           STUDENT REGISTRATIONS DATA TABLE
+           STUDENT REGISTRATIONS DATA TABLE (Dark Glassmorphic Table)
            ========================================================================== */}
-        <div style={{ background: '#FFFFFF', borderRadius: '24px', padding: '24px', boxShadow: '0 8px 24px rgba(0, 0, 0, 0.03)', overflowX: 'auto' }}>
+        <div style={{ background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '24px', padding: '24px', boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)', overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
             <thead>
-              <tr style={{ borderBottom: '2px solid #EDF2F7', color: '#64748B', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <tr style={{ borderBottom: '2px solid rgba(255, 255, 255, 0.1)', color: '#94A3B8', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 <th style={{ padding: '14px 16px' }}>PARTICIPANT ID</th>
                 <th style={{ padding: '14px 16px' }}>STUDENT DETAILS</th>
                 <th style={{ padding: '14px 16px' }}>REG NO</th>
@@ -668,62 +671,62 @@ const AdminControlCenter = () => {
                   const isRejected = reg.status === 'REJECTED' || reg.paymentStatus === 'REJECTED';
 
                   return (
-                    <tr key={reg._id || index} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                    <tr key={reg._id || index} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
                       <td style={{ padding: '16px' }}>
-                        <span style={{ background: '#EFF6FF', color: '#2563EB', fontWeight: 800, fontSize: '0.8rem', padding: '6px 12px', borderRadius: '9999px', display: 'inline-block' }}>
+                        <span style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38BDF8', border: '1px solid rgba(56, 189, 248, 0.3)', fontWeight: 800, fontSize: '0.8rem', padding: '6px 12px', borderRadius: '9999px', display: 'inline-block' }}>
                           {reg.registrationId}
                         </span>
-                        <div style={{ fontSize: '0.72rem', color: '#94A3B8', marginTop: '2px' }}>#{index + 1}</div>
+                        <div style={{ fontSize: '0.72rem', color: '#64748B', marginTop: '2px' }}>#{index + 1}</div>
                       </td>
 
                       <td style={{ padding: '16px' }}>
-                        <div style={{ fontWeight: 800, color: '#0F172A', fontSize: '0.92rem' }}>{reg.fullName}</div>
-                        <div style={{ fontSize: '0.8rem', color: '#2563EB', marginTop: '2px' }}>{reg.email}</div>
-                        <div style={{ fontSize: '0.78rem', color: '#64748B' }}>{reg.phone}</div>
+                        <div style={{ fontWeight: 800, color: '#FFFFFF', fontSize: '0.92rem' }}>{reg.fullName}</div>
+                        <div style={{ fontSize: '0.8rem', color: '#38BDF8', marginTop: '2px' }}>{reg.email}</div>
+                        <div style={{ fontSize: '0.78rem', color: '#94A3B8' }}>{reg.phone}</div>
                       </td>
 
-                      <td style={{ padding: '16px', fontWeight: 800, fontFamily: 'monospace', color: '#1E293B' }}>
+                      <td style={{ padding: '16px', fontWeight: 800, fontFamily: 'monospace', color: '#F8FAFC' }}>
                         {reg.studentId}
                       </td>
 
-                      <td style={{ padding: '16px', fontWeight: 800, fontFamily: 'monospace', color: '#2563EB' }}>
+                      <td style={{ padding: '16px', fontWeight: 800, fontFamily: 'monospace', color: '#38BDF8' }}>
                         {reg.payment?.transactionId || 'N/A'}
                       </td>
 
                       <td style={{ padding: '16px' }}>
-                        <div style={{ fontWeight: 700, color: '#1E293B' }}>{reg.department} ({reg.year})</div>
-                        <div style={{ fontSize: '0.78rem', color: '#64748B' }}>Sec: <strong>{reg.section || '24S01'}</strong> • {reg.residency || 'Day Scholar'}</div>
+                        <div style={{ fontWeight: 700, color: '#F8FAFC' }}>{reg.department} ({reg.year})</div>
+                        <div style={{ fontSize: '0.78rem', color: '#94A3B8' }}>Sec: <strong style={{ color: '#FFF' }}>{reg.section || '24S01'}</strong> • {reg.residency || 'Day Scholar'}</div>
                       </td>
 
                       <td style={{ padding: '16px' }}>
                         {proofUrl ? (
-                          <div onClick={() => setSelectedReg(reg)} title="Click to view full screenshot proof" style={{ width: '42px', height: '42px', borderRadius: '50%', overflow: 'hidden', border: '2px solid #2563EB', cursor: 'pointer', background: '#000' }}>
+                          <div onClick={() => setSelectedReg(reg)} title="Click to view full screenshot proof" style={{ width: '42px', height: '42px', borderRadius: '50%', overflow: 'hidden', border: '2px solid #38BDF8', cursor: 'pointer', background: '#000' }}>
                             <img src={proofUrl.startsWith('http') ? proofUrl : `/${proofUrl}`} alt="Payment Proof" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           </div>
                         ) : (
-                          <span style={{ fontSize: '0.78rem', color: '#94A3B8' }}>No proof</span>
+                          <span style={{ fontSize: '0.78rem', color: '#64748B' }}>No proof</span>
                         )}
                       </td>
 
                       <td style={{ padding: '16px' }}>
-                        <span style={{ background: isVerified ? '#DCFCE7' : isRejected ? '#FEE2E2' : '#FFEDD5', color: isVerified ? '#15803D' : isRejected ? '#B91C1C' : '#C2410C', fontWeight: 800, fontSize: '0.78rem', padding: '5px 12px', borderRadius: '9999px', display: 'inline-block' }}>
+                        <span style={{ background: isVerified ? 'rgba(34, 197, 94, 0.15)' : isRejected ? 'rgba(239, 68, 68, 0.15)' : 'rgba(249, 115, 22, 0.15)', color: isVerified ? '#4ADE80' : isRejected ? '#F87171' : '#FB923C', border: isVerified ? '1px solid rgba(34, 197, 94, 0.3)' : isRejected ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(249, 115, 22, 0.3)', fontWeight: 800, fontSize: '0.78rem', padding: '5px 12px', borderRadius: '9999px', display: 'inline-block' }}>
                           {isVerified ? 'Approved' : isRejected ? 'Rejected' : 'Pending'}
                         </span>
                       </td>
 
-                      <td style={{ padding: '16px', color: '#64748B', fontSize: '0.8rem' }}>
+                      <td style={{ padding: '16px', color: '#94A3B8', fontSize: '0.8rem' }}>
                         {new Date(reg.createdAt).toLocaleDateString()}<br />
-                        <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>
+                        <span style={{ fontSize: '0.75rem', color: '#64748B' }}>
                           {new Date(reg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </td>
 
                       <td style={{ padding: '16px', textAlign: 'center' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                          <button onClick={() => setSelectedReg(reg)} title="Review Payment" style={{ background: '#EFF6FF', border: 'none', color: '#2563EB', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <button onClick={() => setSelectedReg(reg)} title="Review Payment" style={{ background: 'rgba(56, 189, 248, 0.15)', border: '1px solid rgba(56, 189, 248, 0.3)', color: '#38BDF8', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
                             <CheckCircle2 size={16} />
                           </button>
-                          <button onClick={() => handleDeleteRegistration(reg.registrationId || reg._id)} title="Delete Record" style={{ background: '#FEE2E2', border: 'none', color: '#DC2626', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <button onClick={() => handleDeleteRegistration(reg.registrationId || reg._id)} title="Delete Record" style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#F87171', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
                             <Trash2 size={16} />
                           </button>
                         </div>
@@ -762,23 +765,23 @@ const AdminControlCenter = () => {
       )}
 
       {/* ==========================================================================
-         MODAL 3: ATTENDANCE SESSIONS MODAL (Matching Photo 2)
+         MODAL 3: ATTENDANCE SESSIONS MODAL (Dark Theme)
          ========================================================================== */}
       {attendanceModalOpen && (
-        <div className="modal-overlay" style={{ zIndex: 9999 }}>
-          <div className="modal-content" style={{ maxWidth: '1000px', width: '95%', borderRadius: '28px', background: '#EDF2F7', color: '#0F172A', padding: '32px', maxHeight: '90vh', overflowY: 'auto' }}>
+        <div className="modal-overlay" style={{ zIndex: 9999, background: 'rgba(0, 0, 0, 0.8)', backdropFilter: 'blur(8px)' }}>
+          <div className="modal-content" style={{ maxWidth: '1000px', width: '95%', borderRadius: '28px', background: '#0F172A', border: '1px solid rgba(255, 255, 255, 0.12)', color: '#F8FAFC', padding: '32px', maxHeight: '90vh', overflowY: 'auto' }}>
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
               <div>
-                <h2 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#0F172A', margin: 0, textTransform: 'uppercase' }}>
+                <h2 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#FFFFFF', margin: 0, textTransform: 'uppercase' }}>
                   ATTENDANCE SYSTEM
                 </h2>
-                <p style={{ color: '#64748B', fontSize: '0.88rem', margin: '4px 0 0 0' }}>
+                <p style={{ color: '#94A3B8', fontSize: '0.88rem', margin: '4px 0 0 0' }}>
                   Scan venue QR codes or manually mark student attendance records.
                 </p>
               </div>
-              <button onClick={() => setAttendanceModalOpen(false)} style={{ background: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '50%', width: '38px', height: '38px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <X size={20} color="#64748B" />
+              <button onClick={() => setAttendanceModalOpen(false)} style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '50%', width: '38px', height: '38px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <X size={20} color="#94A3B8" />
               </button>
             </div>
 
@@ -786,30 +789,30 @@ const AdminControlCenter = () => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', marginBottom: '24px' }}>
               
               {/* Left Box: Camera Live View */}
-              <div style={{ background: '#FFFFFF', borderRadius: '20px', padding: '20px', boxShadow: '0 8px 24px rgba(0,0,0,0.03)' }}>
+              <div style={{ background: '#0B132B', borderRadius: '20px', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0F172A', textTransform: 'uppercase' }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#38BDF8', textTransform: 'uppercase' }}>
                     Integrated Camera Scanner
                   </span>
                   <button
                     onClick={() => setCameraPaused(!cameraPaused)}
-                    style={{ background: '#F1F5F9', border: '1px solid #E2E8F0', padding: '4px 12px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                    style={{ background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#FFF', padding: '4px 12px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
                   >
                     {cameraPaused ? 'Resume Camera' : 'Pause Camera'}
                   </button>
                 </div>
 
-                <div style={{ background: '#0F172A', height: '180px', borderRadius: '14px', overflow: 'hidden', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF' }}>
+                <div style={{ background: '#020617', height: '180px', borderRadius: '14px', border: '1px solid rgba(56, 189, 248, 0.2)', overflow: 'hidden', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF' }}>
                   <Camera size={48} color="#38BDF8" style={{ opacity: 0.8 }} />
-                  <div style={{ position: 'absolute', bottom: '10px', left: '10px', right: '10px', background: 'rgba(0,0,0,0.6)', padding: '6px', borderRadius: '8px', fontSize: '0.72rem', color: '#CBD5E1', textAlign: 'center' }}>
+                  <div style={{ position: 'absolute', bottom: '10px', left: '10px', right: '10px', background: 'rgba(0,0,0,0.75)', padding: '6px', borderRadius: '8px', fontSize: '0.72rem', color: '#94A3B8', textAlign: 'center' }}>
                     Continuously decodes QR codes • 2.5s Cool-Down Protection
                   </div>
                 </div>
               </div>
 
               {/* Right Box: Search, Mark & Live Stats */}
-              <div style={{ background: '#FFFFFF', borderRadius: '20px', padding: '20px', boxShadow: '0 8px 24px rgba(0,0,0,0.03)' }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0F172A', textTransform: 'uppercase', display: 'block', marginBottom: '10px' }}>
+              <div style={{ background: '#0B132B', borderRadius: '20px', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '20px' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#38BDF8', textTransform: 'uppercase', display: 'block', marginBottom: '10px' }}>
                   BARCODE / REG NO SEARCH
                 </span>
 
@@ -819,38 +822,38 @@ const AdminControlCenter = () => {
                     placeholder="Type or scan Reg No / QR payload..."
                     value={manualScanInput}
                     onChange={(e) => setManualScanInput(e.target.value)}
-                    style={{ flex: 1, padding: '10px 14px', borderRadius: '12px', border: '1px solid #CBD5E1', fontSize: '0.88rem' }}
+                    style={{ flex: 1, padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0F172A', color: '#FFF', fontSize: '0.88rem' }}
                   />
-                  <button type="submit" style={{ background: '#2563EB', color: '#FFF', border: 'none', padding: '10px 18px', borderRadius: '12px', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer' }}>
+                  <button type="submit" style={{ background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)', color: '#FFF', border: 'none', padding: '10px 18px', borderRadius: '12px', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer' }}>
                     MARK
                   </button>
                 </form>
 
                 {/* Stats Bar */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', textAlign: 'center', marginBottom: '16px', background: '#F8FAFC', padding: '12px', borderRadius: '14px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', textAlign: 'center', marginBottom: '16px', background: '#0F172A', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '12px', borderRadius: '14px' }}>
                   <div>
-                    <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase' }}>PRESENT</div>
-                    <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#16A34A' }}>{presentCount}</div>
+                    <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase' }}>PRESENT</div>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#4ADE80' }}>{presentCount}</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase' }}>ABSENT</div>
-                    <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#DC2626' }}>{absentCount}</div>
+                    <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase' }}>ABSENT</div>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#F87171' }}>{absentCount}</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase' }}>RATE</div>
-                    <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#2563EB' }}>{attendanceRate}%</div>
+                    <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase' }}>RATE</div>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#38BDF8' }}>{attendanceRate}%</div>
                   </div>
                 </div>
 
                 {/* Filter Tabs */}
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <button onClick={() => setAttendanceTab('PRESENT')} style={{ flex: 1, padding: '6px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800, border: 'none', cursor: 'pointer', background: attendanceTab === 'PRESENT' ? '#DCFCE7' : '#F1F5F9', color: attendanceTab === 'PRESENT' ? '#16A34A' : '#64748B' }}>
+                  <button onClick={() => setAttendanceTab('PRESENT')} style={{ flex: 1, padding: '6px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800, border: 'none', cursor: 'pointer', background: attendanceTab === 'PRESENT' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(255,255,255,0.05)', color: attendanceTab === 'PRESENT' ? '#4ADE80' : '#94A3B8' }}>
                     PRESENT ({presentCount})
                   </button>
-                  <button onClick={() => setAttendanceTab('ABSENT')} style={{ flex: 1, padding: '6px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800, border: 'none', cursor: 'pointer', background: attendanceTab === 'ABSENT' ? '#FEE2E2' : '#F1F5F9', color: attendanceTab === 'ABSENT' ? '#DC2626' : '#64748B' }}>
+                  <button onClick={() => setAttendanceTab('ABSENT')} style={{ flex: 1, padding: '6px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800, border: 'none', cursor: 'pointer', background: attendanceTab === 'ABSENT' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255,255,255,0.05)', color: attendanceTab === 'ABSENT' ? '#F87171' : '#94A3B8' }}>
                     ABSENT ({absentCount})
                   </button>
-                  <button onClick={() => setAttendanceTab('ALL')} style={{ flex: 1, padding: '6px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800, border: 'none', cursor: 'pointer', background: attendanceTab === 'ALL' ? '#EFF6FF' : '#F1F5F9', color: attendanceTab === 'ALL' ? '#2563EB' : '#64748B' }}>
+                  <button onClick={() => setAttendanceTab('ALL')} style={{ flex: 1, padding: '6px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800, border: 'none', cursor: 'pointer', background: attendanceTab === 'ALL' ? 'rgba(56, 189, 248, 0.2)' : 'rgba(255,255,255,0.05)', color: attendanceTab === 'ALL' ? '#38BDF8' : '#94A3B8' }}>
                     ALL ({registrations.length})
                   </button>
                 </div>
@@ -859,14 +862,14 @@ const AdminControlCenter = () => {
             </div>
 
             {/* Bottom Table: SESSION PARTICIPANT ROSTER */}
-            <div style={{ background: '#FFFFFF', borderRadius: '20px', padding: '20px', boxShadow: '0 8px 24px rgba(0,0,0,0.03)' }}>
-              <h4 style={{ fontSize: '1rem', fontWeight: 900, color: '#0F172A', marginBottom: '14px', textTransform: 'uppercase' }}>
+            <div style={{ background: '#0B132B', borderRadius: '20px', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '20px' }}>
+              <h4 style={{ fontSize: '1rem', fontWeight: 900, color: '#FFFFFF', marginBottom: '14px', textTransform: 'uppercase' }}>
                 SESSION PARTICIPANT ROSTER
               </h4>
 
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
                 <thead>
-                  <tr style={{ borderBottom: '2px solid #EDF2F7', color: '#64748B', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase' }}>
+                  <tr style={{ borderBottom: '2px solid rgba(255, 255, 255, 0.1)', color: '#94A3B8', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase' }}>
                     <th style={{ padding: '10px 12px' }}>STUDENT NAME</th>
                     <th style={{ padding: '10px 12px' }}>REG NUMBER</th>
                     <th style={{ padding: '10px 12px' }}>DEPT / YEAR</th>
@@ -876,30 +879,30 @@ const AdminControlCenter = () => {
                 <tbody>
                   {filteredAttendanceRoster.length === 0 ? (
                     <tr>
-                      <td colSpan={4} style={{ textAlign: 'center', padding: '24px', color: '#94A3B8' }}>
+                      <td colSpan={4} style={{ textAlign: 'center', padding: '24px', color: '#64748B' }}>
                         No participants found for this filter.
                       </td>
                     </tr>
                   ) : (
                     filteredAttendanceRoster.map((r, i) => (
-                      <tr key={r._id || i} style={{ borderBottom: '1px solid #F1F5F9' }}>
-                        <td style={{ padding: '12px', fontWeight: 800, color: '#0F172A' }}>
+                      <tr key={r._id || i} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                        <td style={{ padding: '12px', fontWeight: 800, color: '#FFFFFF' }}>
                           {r.fullName}<br />
-                          <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 400 }}>{r.email}</span>
+                          <span style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 400 }}>{r.email}</span>
                         </td>
-                        <td style={{ padding: '12px', fontFamily: 'monospace', fontWeight: 800, color: '#2563EB' }}>
+                        <td style={{ padding: '12px', fontFamily: 'monospace', fontWeight: 800, color: '#38BDF8' }}>
                           {r.studentId}
                         </td>
-                        <td style={{ padding: '12px', color: '#475569', fontWeight: 600 }}>
+                        <td style={{ padding: '12px', color: '#CBD5E1', fontWeight: 600 }}>
                           {r.department} ({r.year})
                         </td>
                         <td style={{ padding: '12px', textAlign: 'center' }}>
                           <button
                             onClick={() => handleToggleAttendance(r.registrationId, r.attendance)}
                             style={{
-                              background: r.attendance ? '#DCFCE7' : '#FEE2E2',
-                              color: r.attendance ? '#16A34A' : '#DC2626',
-                              border: 'none',
+                              background: r.attendance ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                              color: r.attendance ? '#4ADE80' : '#F87171',
+                              border: r.attendance ? '1px solid rgba(34, 197, 94, 0.4)' : '1px solid rgba(239, 68, 68, 0.4)',
                               padding: '6px 16px',
                               borderRadius: '9999px',
                               fontWeight: 800,
@@ -922,63 +925,63 @@ const AdminControlCenter = () => {
       )}
 
       {/* ==========================================================================
-         MODAL 4: EVENT SETTINGS MODAL (Matching Photo 1)
+         MODAL 4: EVENT SETTINGS MODAL (Dark Website Theme)
          ========================================================================== */}
       {settingsOpen && (
-        <div className="modal-overlay" style={{ zIndex: 9999 }}>
-          <div className="modal-content" style={{ maxWidth: '640px', width: '95%', borderRadius: '28px', background: '#EDF2F7', color: '#0F172A', padding: '32px', maxHeight: '90vh', overflowY: 'auto' }}>
+        <div className="modal-overlay" style={{ zIndex: 9999, background: 'rgba(0, 0, 0, 0.8)', backdropFilter: 'blur(8px)' }}>
+          <div className="modal-content" style={{ maxWidth: '640px', width: '95%', borderRadius: '28px', background: '#0F172A', border: '1px solid rgba(255, 255, 255, 0.12)', color: '#F8FAFC', padding: '32px', maxHeight: '90vh', overflowY: 'auto' }}>
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div>
-                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748B', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#38BDF8', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                   🔒 PERMANENT / READ-ONLY CONFIG
                 </span>
-                <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0F172A', margin: '4px 0 0 0' }}>
+                <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#FFFFFF', margin: '4px 0 0 0' }}>
                   EVENT SETTINGS
                 </h3>
               </div>
-              <button onClick={() => setSettingsOpen(false)} style={{ background: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <X size={18} color="#64748B" />
+              <button onClick={() => setSettingsOpen(false)} style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <X size={18} color="#94A3B8" />
               </button>
             </div>
 
             <form onSubmit={handleSaveSettings}>
               {/* Event Name */}
               <div style={{ marginBottom: '14px' }}>
-                <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#475569', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>
+                <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#94A3B8', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>
                   EVENT NAME
                 </label>
                 <input
                   type="text"
                   value={eventSettings.eventName}
                   onChange={(e) => setEventSettings({ ...eventSettings, eventName: e.target.value })}
-                  style={{ width: '100%', padding: '12px 14px', borderRadius: '14px', border: '1px solid #CBD5E1', background: '#FFFFFF', fontSize: '0.9rem', fontWeight: 700, color: '#0F172A' }}
+                  style={{ width: '100%', padding: '12px 14px', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', fontSize: '0.9rem', fontWeight: 700, color: '#FFFFFF' }}
                 />
               </div>
 
               {/* Group / Organized By + Event Date */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
                 <div>
-                  <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#475569', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>
+                  <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#94A3B8', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>
                     GROUP / ORGANIZED BY
                   </label>
                   <input
                     type="text"
                     value={eventSettings.organizedBy}
                     onChange={(e) => setEventSettings({ ...eventSettings, organizedBy: e.target.value })}
-                    style={{ width: '100%', padding: '12px 14px', borderRadius: '14px', border: '1px solid #CBD5E1', background: '#FFFFFF', fontSize: '0.88rem', fontWeight: 600 }}
+                    style={{ width: '100%', padding: '12px 14px', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.88rem', fontWeight: 600 }}
                   />
                 </div>
 
                 <div>
-                  <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#475569', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>
+                  <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#94A3B8', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>
                     EVENT DATE
                   </label>
                   <input
                     type="text"
                     value={eventSettings.eventDate}
                     onChange={(e) => setEventSettings({ ...eventSettings, eventDate: e.target.value })}
-                    style={{ width: '100%', padding: '12px 14px', borderRadius: '14px', border: '1px solid #CBD5E1', background: '#FFFFFF', fontSize: '0.88rem', fontWeight: 600 }}
+                    style={{ width: '100%', padding: '12px 14px', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.88rem', fontWeight: 600 }}
                   />
                 </div>
               </div>
@@ -986,50 +989,50 @@ const AdminControlCenter = () => {
               {/* Venue + Fee */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
                 <div>
-                  <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#475569', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>
+                  <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#94A3B8', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>
                     VENUE
                   </label>
                   <input
                     type="text"
                     value={eventSettings.venue}
                     onChange={(e) => setEventSettings({ ...eventSettings, venue: e.target.value })}
-                    style={{ width: '100%', padding: '12px 14px', borderRadius: '14px', border: '1px solid #CBD5E1', background: '#FFFFFF', fontSize: '0.88rem', fontWeight: 600 }}
+                    style={{ width: '100%', padding: '12px 14px', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.88rem', fontWeight: 600 }}
                   />
                 </div>
 
                 <div>
-                  <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#475569', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>
+                  <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#94A3B8', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>
                     REGISTRATION FEE (₹)
                   </label>
                   <input
                     type="number"
                     value={eventSettings.fee}
                     onChange={(e) => setEventSettings({ ...eventSettings, fee: parseInt(e.target.value) || 300 })}
-                    style={{ width: '100%', padding: '12px 14px', borderRadius: '14px', border: '1px solid #CBD5E1', background: '#FFFFFF', fontSize: '0.88rem', fontWeight: 800 }}
+                    style={{ width: '100%', padding: '12px 14px', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.88rem', fontWeight: 800 }}
                   />
                 </div>
               </div>
 
               {/* Official UPI VPA ID */}
               <div style={{ marginBottom: '14px' }}>
-                <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#475569', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>
+                <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#94A3B8', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>
                   OFFICIAL UPI VPA ID
                 </label>
                 <input
                   type="text"
                   value={eventSettings.upiId}
                   onChange={(e) => setEventSettings({ ...eventSettings, upiId: e.target.value })}
-                  style={{ width: '100%', padding: '12px 14px', borderRadius: '14px', border: '1px solid #CBD5E1', background: '#FFFFFF', fontSize: '0.88rem', fontWeight: 700, color: '#2563EB' }}
+                  style={{ width: '100%', padding: '12px 14px', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', fontSize: '0.88rem', fontWeight: 700, color: '#38BDF8' }}
                 />
               </div>
 
               {/* Volunteer Passcode */}
               <div style={{ marginBottom: '14px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                  <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>
+                  <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase' }}>
                     VOLUNTEER 6-DIGIT PASSCODE
                   </label>
-                  <span style={{ fontSize: '0.7rem', color: '#2563EB', fontWeight: 700 }}>
+                  <span style={{ fontSize: '0.7rem', color: '#38BDF8', fontWeight: 700 }}>
                     USED FOR URL/ATTEND VOLUNTEER SCANNER ACCESS
                   </span>
                 </div>
@@ -1037,36 +1040,36 @@ const AdminControlCenter = () => {
                   type="text"
                   value={eventSettings.volunteerPasscode}
                   onChange={(e) => setEventSettings({ ...eventSettings, volunteerPasscode: e.target.value })}
-                  style={{ width: '100%', padding: '12px 14px', borderRadius: '14px', border: '1px solid #CBD5E1', background: '#FFFFFF', fontSize: '1rem', fontWeight: 900, fontFamily: 'monospace', letterSpacing: '0.1em' }}
+                  style={{ width: '100%', padding: '12px 14px', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '1rem', fontWeight: 900, fontFamily: 'monospace', letterSpacing: '0.1em' }}
                 />
               </div>
 
               {/* Maximum Spots */}
               <div style={{ marginBottom: '18px' }}>
-                <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#475569', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>
+                <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#94A3B8', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>
                   MAXIMUM SPOTS
                 </label>
                 <input
                   type="number"
                   value={eventSettings.maxSpots}
                   onChange={(e) => setEventSettings({ ...eventSettings, maxSpots: parseInt(e.target.value) || 200 })}
-                  style={{ width: '100%', padding: '12px 14px', borderRadius: '14px', border: '1px solid #CBD5E1', background: '#FFFFFF', fontSize: '0.95rem', fontWeight: 800 }}
+                  style={{ width: '100%', padding: '12px 14px', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.95rem', fontWeight: 800 }}
                 />
               </div>
 
               {/* Registration Status Toggle Bar */}
-              <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '14px 20px', marginBottom: '24px', border: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ background: '#0B132B', borderRadius: '16px', padding: '14px 20px', marginBottom: '24px', border: '1px solid rgba(255, 255, 255, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#0F172A' }}>Registration Status</div>
-                  <div style={{ fontSize: '0.75rem', color: '#64748B' }}>Toggle to manually open or close student registrations</div>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#FFFFFF' }}>Registration Status</div>
+                  <div style={{ fontSize: '0.75rem', color: '#94A3B8' }}>Toggle to manually open or close student registrations</div>
                 </div>
                 <button
                   type="button"
                   onClick={handleToggleStatus}
                   style={{
-                    background: eventSettings.registrationOpen ? '#DCFCE7' : '#FEE2E2',
-                    color: eventSettings.registrationOpen ? '#16A34A' : '#DC2626',
-                    border: 'none',
+                    background: eventSettings.registrationOpen ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                    color: eventSettings.registrationOpen ? '#4ADE80' : '#F87171',
+                    border: eventSettings.registrationOpen ? '1px solid rgba(34, 197, 94, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)',
                     padding: '8px 18px',
                     borderRadius: '9999px',
                     fontWeight: 800,
@@ -1083,13 +1086,13 @@ const AdminControlCenter = () => {
                 <button
                   type="button"
                   onClick={() => setSettingsOpen(false)}
-                  style={{ background: '#F1F5F9', border: '1px solid #CBD5E1', color: '#475569', padding: '12px 24px', borderRadius: '9999px', fontWeight: 700, cursor: 'pointer' }}
+                  style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#94A3B8', padding: '12px 24px', borderRadius: '9999px', fontWeight: 700, cursor: 'pointer' }}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  style={{ background: '#2563EB', color: '#FFFFFF', border: 'none', padding: '12px 32px', borderRadius: '9999px', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer', boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)' }}
+                  style={{ background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)', color: '#FFFFFF', border: 'none', padding: '12px 32px', borderRadius: '9999px', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer', boxShadow: '0 4px 14px rgba(249, 115, 22, 0.35)' }}
                 >
                   Save Configuration
                 </button>
@@ -1104,21 +1107,21 @@ const AdminControlCenter = () => {
          MODAL 5: DIRECT REGISTRATION MODAL
          ========================================================================== */}
       {directRegOpen && (
-        <div className="modal-overlay" style={{ zIndex: 9999 }}>
-          <div className="modal-content" style={{ maxWidth: '520px', borderRadius: '24px', background: '#FFFFFF', color: '#0F172A', padding: '28px' }}>
-            <button onClick={() => setDirectRegOpen(false)} style={{ position: 'absolute', top: '20px', right: '20px', background: 'none', border: 'none', color: '#64748B', cursor: 'pointer' }}>
+        <div className="modal-overlay" style={{ zIndex: 9999, background: 'rgba(0, 0, 0, 0.8)', backdropFilter: 'blur(8px)' }}>
+          <div className="modal-content" style={{ maxWidth: '520px', borderRadius: '24px', background: '#0F172A', border: '1px solid rgba(255, 255, 255, 0.12)', color: '#F8FAFC', padding: '28px' }}>
+            <button onClick={() => setDirectRegOpen(false)} style={{ position: 'absolute', top: '20px', right: '20px', background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer' }}>
               <X size={24} />
             </button>
 
-            <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#0F172A', marginBottom: '4px' }}>
+            <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#FFFFFF', marginBottom: '4px' }}>
               Direct Student Registration
             </h3>
-            <p style={{ color: '#64748B', fontSize: '0.85rem', marginBottom: '20px' }}>
+            <p style={{ color: '#94A3B8', fontSize: '0.85rem', marginBottom: '20px' }}>
               Bypass Google Sign-In & Payment verification for offline / spot registration.
             </p>
 
             {directFormError && (
-              <div style={{ background: '#FEE2E2', border: '1px solid #FCA5A5', color: '#DC2626', padding: '10px', borderRadius: '8px', marginBottom: '16px', fontSize: '0.85rem' }}>
+              <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#F87171', padding: '10px', borderRadius: '8px', marginBottom: '16px', fontSize: '0.85rem' }}>
                 {directFormError}
               </div>
             )}
@@ -1126,56 +1129,56 @@ const AdminControlCenter = () => {
             <form onSubmit={handleDirectSubmit}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
                 <div>
-                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>Full Name *</label>
-                  <input type="text" required value={directForm.fullName} onChange={(e) => setDirectForm({ ...directForm, fullName: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.88rem' }} />
+                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#CBD5E1', display: 'block', marginBottom: '4px' }}>Full Name *</label>
+                  <input type="text" required value={directForm.fullName} onChange={(e) => setDirectForm({ ...directForm, fullName: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.88rem' }} />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>Email Address *</label>
-                  <input type="email" required value={directForm.email} onChange={(e) => setDirectForm({ ...directForm, email: e.target.value })} placeholder="student@klu.ac.in" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.88rem' }} />
+                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#CBD5E1', display: 'block', marginBottom: '4px' }}>Email Address *</label>
+                  <input type="email" required value={directForm.email} onChange={(e) => setDirectForm({ ...directForm, email: e.target.value })} placeholder="student@klu.ac.in" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.88rem' }} />
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
                 <div>
-                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>Student Roll No / ID *</label>
-                  <input type="text" required value={directForm.studentId} onChange={(e) => setDirectForm({ ...directForm, studentId: e.target.value })} placeholder="e.g. 2400030123" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.88rem' }} />
+                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#CBD5E1', display: 'block', marginBottom: '4px' }}>Student Roll No / ID *</label>
+                  <input type="text" required value={directForm.studentId} onChange={(e) => setDirectForm({ ...directForm, studentId: e.target.value })} placeholder="e.g. 2400030123" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.88rem' }} />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>Phone Number *</label>
-                  <input type="tel" required value={directForm.phone} onChange={(e) => setDirectForm({ ...directForm, phone: e.target.value })} placeholder="9876543210" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.88rem' }} />
+                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#CBD5E1', display: 'block', marginBottom: '4px' }}>Phone Number *</label>
+                  <input type="tel" required value={directForm.phone} onChange={(e) => setDirectForm({ ...directForm, phone: e.target.value })} placeholder="9876543210" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.88rem' }} />
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '20px' }}>
                 <div>
-                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>Dept</label>
-                  <select value={directForm.department} onChange={(e) => setDirectForm({ ...directForm, department: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.85rem' }}>
-                    <option value="CSE">CSE</option>
-                    <option value="AI & DS">AI & DS</option>
-                    <option value="IT">IT</option>
-                    <option value="ECE">ECE</option>
-                    <option value="EEE">EEE</option>
-                    <option value="Mechanical">Mechanical</option>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#CBD5E1', display: 'block', marginBottom: '4px' }}>Dept</label>
+                  <select value={directForm.department} onChange={(e) => setDirectForm({ ...directForm, department: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.85rem' }}>
+                    <option value="CSE" style={{ background: '#0F172A' }}>CSE</option>
+                    <option value="AI & DS" style={{ background: '#0F172A' }}>AI & DS</option>
+                    <option value="IT" style={{ background: '#0F172A' }}>IT</option>
+                    <option value="ECE" style={{ background: '#0F172A' }}>ECE</option>
+                    <option value="EEE" style={{ background: '#0F172A' }}>EEE</option>
+                    <option value="Mechanical" style={{ background: '#0F172A' }}>Mechanical</option>
                   </select>
                 </div>
 
                 <div>
-                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>Year</label>
-                  <select value={directForm.year} onChange={(e) => setDirectForm({ ...directForm, year: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.85rem' }}>
-                    <option value="1st Year">1st Year</option>
-                    <option value="2nd Year">2nd Year</option>
-                    <option value="3rd Year">3rd Year</option>
-                    <option value="4th Year">4th Year</option>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#CBD5E1', display: 'block', marginBottom: '4px' }}>Year</label>
+                  <select value={directForm.year} onChange={(e) => setDirectForm({ ...directForm, year: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.85rem' }}>
+                    <option value="1st Year" style={{ background: '#0F172A' }}>1st Year</option>
+                    <option value="2nd Year" style={{ background: '#0F172A' }}>2nd Year</option>
+                    <option value="3rd Year" style={{ background: '#0F172A' }}>3rd Year</option>
+                    <option value="4th Year" style={{ background: '#0F172A' }}>4th Year</option>
                   </select>
                 </div>
 
                 <div>
-                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>Section</label>
-                  <input type="text" value={directForm.section} onChange={(e) => setDirectForm({ ...directForm, section: e.target.value })} placeholder="24S01" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.85rem' }} />
+                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#CBD5E1', display: 'block', marginBottom: '4px' }}>Section</label>
+                  <input type="text" value={directForm.section} onChange={(e) => setDirectForm({ ...directForm, section: e.target.value })} placeholder="24S01" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.85rem' }} />
                 </div>
               </div>
 
-              <button type="submit" disabled={directFormLoading} style={{ width: '100%', background: '#2563EB', color: '#FFFFFF', border: 'none', padding: '14px', borderRadius: '12px', fontWeight: 800, fontSize: '0.95rem', cursor: 'pointer' }}>
+              <button type="submit" disabled={directFormLoading} style={{ width: '100%', background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)', color: '#FFFFFF', border: 'none', padding: '14px', borderRadius: '12px', fontWeight: 800, fontSize: '0.95rem', cursor: 'pointer', boxShadow: '0 4px 14px rgba(249, 115, 22, 0.35)' }}>
                 {directFormLoading ? 'Processing Registration...' : 'Complete & Confirm Spot (₹300 Paid)'}
               </button>
             </form>
