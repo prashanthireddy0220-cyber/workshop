@@ -1,6 +1,14 @@
-import axios from 'axios';
+// Normalize API Base URL to ensure /api suffix is present
+const getBaseUrl = () => {
+  let url = (import.meta.env.VITE_API_URL || 'http://localhost:5001/api').trim();
+  url = url.replace(/\/+$/, '');
+  if (!url.endsWith('/api')) {
+    url = `${url}/api`;
+  }
+  return url;
+};
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+const API_BASE = getBaseUrl();
 
 const api = axios.create({
   baseURL: API_BASE,
