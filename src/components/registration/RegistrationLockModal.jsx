@@ -103,8 +103,13 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
   const handleFileChange = (e) => {
     const selected = e.target.files[0];
     if (selected) {
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (!allowedTypes.includes(selected.type)) {
+        setError('Invalid image type. Only JPEG, JPG, PNG, and WebP images are allowed.');
+        return;
+      }
       if (selected.size > 5 * 1024 * 1024) {
-        setError('File size exceeds 5MB limit');
+        setError('Image size must be 5 MB or less.');
         return;
       }
       setPaymentFile(selected);
@@ -379,7 +384,7 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
             {/* Payment Screenshot Upload Field */}
             <div className="form-group" style={{ marginBottom: '18px' }}>
               <label style={{ display: 'block', fontSize: '0.88rem', color: '#FFF', fontWeight: 700, marginBottom: '6px' }}>
-                1. Upload Payment Screenshot / Receipt (Optional / Recommended)
+                1. Upload UPI Payment Screenshot (JPEG, PNG, WEBP &lt; 5MB)
               </label>
               
               <div style={{
@@ -393,7 +398,7 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
               }}>
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp"
                   onChange={handleFileChange}
                   style={{
                     position: 'absolute',

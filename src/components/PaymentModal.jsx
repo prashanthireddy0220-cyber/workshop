@@ -23,8 +23,13 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
     if (selectedFile) {
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (!allowedTypes.includes(selectedFile.type)) {
+        setError('Invalid image type. Only JPEG, JPG, PNG, and WebP images are allowed.');
+        return;
+      }
       if (selectedFile.size > 5 * 1024 * 1024) {
-        setError('File size exceeds 5MB limit');
+        setError('Image size must be 5 MB or less.');
         return;
       }
       setFile(selectedFile);
@@ -162,7 +167,7 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
           {/* FIRST: Upload Payment Screenshot Proof */}
           <div className="form-group" style={{ marginBottom: '18px' }}>
             <label style={{ display: 'block', fontSize: '0.88rem', color: '#FFF', fontWeight: 700, marginBottom: '6px' }}>
-              1. Upload Payment Screenshot / Receipt (PNG, JPG, WEBP &lt; 5MB)
+              1. Upload UPI Payment Screenshot (JPEG, PNG, WEBP &lt; 5MB)
             </label>
             
             <div style={{
@@ -176,7 +181,7 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
             }}>
               <input
                 type="file"
-                accept="image/*,.pdf"
+                accept="image/jpeg,image/png,image/webp"
                 onChange={handleFileChange}
                 required
                 style={{

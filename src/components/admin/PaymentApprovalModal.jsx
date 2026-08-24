@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, CheckCircle, XCircle, ShieldCheck, AlertCircle, FileText } from 'lucide-react';
+import { X, CheckCircle, XCircle, AlertCircle, Eye, ExternalLink } from 'lucide-react';
 import { approvePayment, rejectPayment } from '../../services/api';
 
 const PaymentApprovalModal = ({ isOpen, onClose, registrationItem, onRefresh }) => {
@@ -104,21 +104,38 @@ const PaymentApprovalModal = ({ isOpen, onClose, registrationItem, onRefresh }) 
           </div>
         </div>
 
-        {/* Payment Screenshot Preview */}
+        {/* UPI Payment Screenshot Preview & View Link */}
         <div style={{ marginBottom: '24px' }}>
-          <label style={{ display: 'block', color: '#94A3B8', fontSize: '0.85rem', marginBottom: '8px' }}>
-            Uploaded Payment Screenshot Proof:
+          <label style={{ display: 'block', color: '#94A3B8', fontSize: '0.85rem', marginBottom: '8px', fontWeight: 600 }}>
+            Uploaded UPI Payment Screenshot (Cloudinary Storage):
           </label>
 
-          {payment && payment.screenshotUrl ? (
-            <div style={{ background: '#000', borderRadius: '10px', overflow: 'hidden', padding: '10px', textAlign: 'center' }}>
-              <img
-                src={payment.screenshotUrl.startsWith('/') ? payment.screenshotUrl : `/${payment.screenshotUrl}`}
-                alt="Payment Proof Screenshot"
-                style={{ maxHeight: '300px', maxWidth: '100%', borderRadius: '6px', margin: '0 auto' }}
-              />
-            </div>
-          ) : (
+          {payment && (payment.upiScreenshotUrl || payment.screenshotUrl) ? (() => {
+            const rawUrl = payment.upiScreenshotUrl || payment.screenshotUrl;
+            const fullUrl = rawUrl.startsWith('http://') || rawUrl.startsWith('https://')
+              ? rawUrl
+              : rawUrl.startsWith('/')
+                ? rawUrl
+                : `/${rawUrl}`;
+            return (
+              <div style={{ background: '#000', borderRadius: '12px', overflow: 'hidden', padding: '12px', textAlign: 'center', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                <img
+                  src={fullUrl}
+                  alt="UPI Payment Screenshot Proof"
+                  style={{ maxHeight: '280px', maxWidth: '100%', borderRadius: '8px', margin: '0 auto 10px auto', display: 'block', objectFit: 'contain' }}
+                />
+                <a
+                  href={fullUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-secondary"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', padding: '8px 16px', borderRadius: '8px' }}
+                >
+                  <ExternalLink size={15} /> View Full Screenshot / Receipt
+                </a>
+              </div>
+            );
+          })() : (
             <div style={{ padding: '20px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', color: '#64748B', textAlign: 'center' }}>
               No screenshot uploaded
             </div>

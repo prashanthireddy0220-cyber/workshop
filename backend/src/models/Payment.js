@@ -23,7 +23,15 @@ const paymentSchema = new mongoose.Schema(
     },
     screenshotUrl: {
       type: String,
-      required: true
+      default: ''
+    },
+    upiScreenshotUrl: {
+      type: String,
+      default: ''
+    },
+    upiScreenshotPublicId: {
+      type: String,
+      default: ''
     },
     status: {
       type: String,
