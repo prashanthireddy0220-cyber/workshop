@@ -55,6 +55,9 @@ export const signInWithGoogleFirebase = async () => {
       idToken: googleIdToken || firebaseIdToken
     };
   } catch (error) {
+    if (error.code === 'auth/popup-blocked') {
+      throw new Error('Your browser blocked the Google sign-in popup. Please allow popups for this site or use the direct KLU Email sign-in option below.');
+    }
     if (error.code === 'auth/unauthorized-domain') {
       const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'this domain';
       throw new Error(`Domain "${currentHost}" is not authorized in Firebase. Please add "${currentHost}" and "vercel.app" to Firebase Console -> Authentication -> Settings -> Authorized Domains.`);
