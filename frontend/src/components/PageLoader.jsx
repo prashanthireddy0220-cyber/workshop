@@ -14,7 +14,7 @@ const PageLoader = ({ isLoading = false, duration = 800, onComplete }) => {
         setVisible(false);
         setFadeOut(false);
         if (onComplete) onComplete();
-      }, 450); // duration of opacity fade out
+      }, 700); // duration of opacity fade out
       return () => clearTimeout(timer);
     }
   }, [isLoading]);
@@ -37,7 +37,7 @@ const PageLoader = ({ isLoading = false, duration = 800, onComplete }) => {
         alignItems: 'center',
         justifyContent: 'center',
         overflow: 'hidden',
-        transition: 'opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1)',
+        transition: 'opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1)',
         opacity: fadeOut ? 0 : 1,
         pointerEvents: fadeOut ? 'none' : 'all'
       }}

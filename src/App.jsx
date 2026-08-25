@@ -28,7 +28,7 @@ const AppContent = () => {
   const isTokenRoute = window.location.pathname.startsWith('/registration/token') || window.location.pathname.startsWith('/token');
   const isMyRegistrationsRoute = window.location.pathname.startsWith('/my-registrations') || window.location.pathname.startsWith('/registration');
 
-  // Initial site load transition - 2.5 second splash screen display
+  // Initial site load transition - 4.2 second splash screen display
   useEffect(() => {
     const timer = setTimeout(() => {
       setPageLoading(false);
@@ -39,7 +39,7 @@ const AppContent = () => {
           setAuthModalOpen(true);
         }
       }
-    }, 2500);
+    }, 4200);
     return () => clearTimeout(timer);
   }, [user, isMyRegistrationsRoute, isTokenRoute]);
 
