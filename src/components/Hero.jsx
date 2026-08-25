@@ -123,7 +123,7 @@ const Hero = ({ onRegisterClick, onLoginClick }) => {
         }}>
           <div className="glass-card" style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Calendar size={18} color="#F97316" />
-            <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>Sept 15-16, 2026</span>
+            <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>Sept 15-16, 2026 (2-Day Workshop)</span>
           </div>
 
           <div className="glass-card" style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: '10px' }}>

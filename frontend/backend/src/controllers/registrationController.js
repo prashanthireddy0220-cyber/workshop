@@ -362,37 +362,33 @@ const confirmPayment = async (req, res) => {
       });
     }
 
-    // Convert status to CONFIRMED & PAID
-    registration.seatStatus = 'CONFIRMED';
-    registration.paymentStatus = 'PAID';
-    registration.status = 'PAYMENT_VERIFIED';
+    // Keep payment status as PENDING for admin manual verification
+    registration.paymentStatus = 'PENDING';
+    registration.status = 'PAYMENT_SUBMITTED';
     await registration.save();
 
-    // Create or update Payment record
+    // Create or update Payment record with PENDING status
     let payment = await Payment.findOne({ registrationId: registration.registrationId });
     if (!payment) {
       payment = await Payment.create({
         registrationId: registration.registrationId,
         userId: registration.userId,
         transactionId: transactionId || `UPI-${Date.now()}`,
-        amount: parseInt(process.env.REGISTRATION_FEE || '300'),
+        amount: parseInt(process.env.REGISTRATION_FEE || '250'),
         paymentMethod: paymentMethod || 'UPI',
-        status: 'VERIFIED',
-        verifiedAt: now
+        status: 'PENDING',
+        submittedAt: now
       });
     } else {
-      payment.status = 'VERIFIED';
+      payment.status = 'PENDING';
       payment.transactionId = transactionId || payment.transactionId;
-      payment.verifiedAt = now;
+      payment.submittedAt = now;
       await payment.save();
     }
 
-    let event = await Event.findOne() || { eventName: 'AI/ML Workshop', date: '2026-09-15', venue: 'IEEE Tech Hall' };
-    sendRegistrationSuccessEmail(registration, event);
-
     return res.status(200).json({
       success: true,
-      message: 'Registration and Payment confirmed successfully!',
+      message: 'Payment proof submitted successfully! Pending admin verification.',
       registration,
       payment
     });

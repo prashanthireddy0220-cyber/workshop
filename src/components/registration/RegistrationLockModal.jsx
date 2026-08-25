@@ -1,20 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { lockSeat, confirmPayment, submitPayment, getEventDetails } from '../../services/api';
-import { X, Clock, ShieldCheck, AlertCircle, ArrowRight, CheckCircle2, Lock, QrCode, CreditCard, Upload } from 'lucide-react';
+import { X, Clock, ShieldCheck, AlertCircle, ArrowRight, CheckCircle2, Lock, QrCode, Upload, Edit, FileText } from 'lucide-react';
 import PaymentSubmittedPage from './PaymentSubmittedPage';
 
 const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
   const { user, refreshRegistration } = useAuth();
 
-  const [step, setStep] = useState(1); // 1: Student Details, 2: Payment, 3: Confirmation
+  const [step, setStep] = useState(1); // 1: Student Details, 1.5: Confirm Details, 2: Payment, 3: Success Receipt
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [eventDetails, setEventDetails] = useState(null);
   const [submittedRecord, setSubmittedRecord] = useState(null);
   const [submittedPayment, setSubmittedPayment] = useState(null);
   const [lockExpiresAt, setLockExpiresAt] = useState(null);
+  const [lockDurationMinutes, setLockDurationMinutes] = useState(10);
   const [lockTimeLeft, setLockTimeLeft] = useState({ minutes: 10, seconds: 0 });
+  const [isExpired, setIsExpired] = useState(false);
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -29,6 +31,7 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
 
   const [paymentFile, setPaymentFile] = useState(null);
   const [paymentPreviewUrl, setPaymentPreviewUrl] = useState('');
+  const [qrImageFailed, setQrImageFailed] = useState(false);
 
   // Pre-fill user details from Google profile when user or modal opens
   useEffect(() => {
@@ -40,14 +43,32 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
     }
   }, [user, isOpen]);
 
-  // Initiate seat lock when modal opens
+  // Reset steps & state when modal opens
   useEffect(() => {
-    if (isOpen && user) {
-      initiateSeatLock();
+    if (isOpen) {
+      setStep(1);
+      setError('');
+      setIsExpired(false);
+      fetchEventDetails();
     }
   }, [isOpen]);
 
-  // Countdown timer for 10-minute seat lock
+  const fetchEventDetails = async () => {
+    try {
+      const evtRes = await getEventDetails();
+      if (evtRes.data.success) {
+        setEventDetails(evtRes.data.event);
+        if (evtRes.data.event.seatLockDurationMinutes) {
+          setLockDurationMinutes(evtRes.data.event.seatLockDurationMinutes);
+          setLockTimeLeft({ minutes: evtRes.data.event.seatLockDurationMinutes, seconds: 0 });
+        }
+      }
+    } catch (evtErr) {
+      console.warn('[EventDetails Fetch Warning]', evtErr);
+    }
+  };
+
+  // Countdown timer for seat lock
   useEffect(() => {
     if (!lockExpiresAt) return;
 
@@ -55,7 +76,8 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
       const remaining = new Date(lockExpiresAt).getTime() - Date.now();
       if (remaining <= 0) {
         clearInterval(timer);
-        setError('Your 10-minute seat lock has expired. Please initiate registration again.');
+        setIsExpired(true);
+        setError(`Your ${lockDurationMinutes}-minute temporary seat lock has expired. Please re-initiate registration.`);
         setLockTimeLeft({ minutes: 0, seconds: 0 });
       } else {
         const minutes = Math.floor(remaining / (1000 * 60));
@@ -65,26 +87,30 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [lockExpiresAt]);
+  }, [lockExpiresAt, lockDurationMinutes]);
 
   const initiateSeatLock = async () => {
     setLoading(true);
     setError('');
     try {
-      try {
-        const evtRes = await getEventDetails();
-        if (evtRes.data.success) setEventDetails(evtRes.data.event);
-      } catch (evtErr) {
-        console.warn('[EventDetails Fetch Warning]', evtErr);
-      }
-
       const res = await lockSeat({
         fullName: formData.fullName || user.displayName || user.name,
+        phone: formData.phone,
+        studentId: formData.studentId,
+        department: formData.department,
+        year: formData.year,
+        section: formData.section,
+        residency: formData.residency,
         photoURL: user.photoURL
       });
 
       if (res.data.success) {
         setLockExpiresAt(res.data.expiresAt);
+        if (res.data.lockDurationMinutes) {
+          setLockDurationMinutes(res.data.lockDurationMinutes);
+        }
+        setIsExpired(false);
+        setStep(2);
       }
     } catch (err) {
       if (err.response?.data?.isAlreadyRegistered) {
@@ -103,7 +129,6 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     if (name === 'transactionId') {
-      // Clean only numeric digits and limit to 12 digits
       const cleanVal = value.replace(/\D/g, '').slice(0, 12);
       setFormData({ ...formData, transactionId: cleanVal });
     } else {
@@ -129,18 +154,26 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
     }
   };
 
-  const handleNextToPayment = (e) => {
+  const handleNextToConfirm = (e) => {
     e.preventDefault();
     if (!formData.studentId || !formData.phone) {
-      setError('Please provide your Student ID and Phone number to continue.');
+      setError('Please provide your Student Register / ID Number and Phone number to continue.');
       return;
     }
     setError('');
-    setStep(2);
+    setStep(1.5);
+  };
+
+  const handleConfirmAndProceedToPayment = () => {
+    initiateSeatLock();
   };
 
   const handlePaymentSubmit = async (e) => {
     e.preventDefault();
+    if (isExpired) {
+      setError(`Your ${lockDurationMinutes}-minute seat lock has expired. Please start registration again.`);
+      return;
+    }
     
     // Strict 12-digit UTR validation
     const utr = formData.transactionId ? formData.transactionId.trim() : '';
@@ -152,10 +185,11 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
     setLoading(true);
     setError('');
 
+    const feeAmount = eventDetails?.registrationFee || 250;
+
     try {
       let registrationRecord = null;
 
-      // Submit payment confirmation
       const res = await confirmPayment({
         transactionId: utr,
         paymentMethod: 'UPI'
@@ -164,13 +198,12 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
       if (res.data.success) {
         registrationRecord = res.data.registration;
         
-        // If payment screenshot was attached, upload screenshot file as well
         if (paymentFile && registrationRecord?.registrationId) {
           try {
             const uploadData = new FormData();
             uploadData.append('registrationId', registrationRecord.registrationId);
             uploadData.append('transactionId', utr);
-            uploadData.append('amount', 300);
+            uploadData.append('amount', feeAmount);
             uploadData.append('screenshot', paymentFile);
             await submitPayment(uploadData);
           } catch (uploadErr) {
@@ -180,7 +213,7 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
 
         await refreshRegistration();
         setSubmittedRecord(registrationRecord);
-        setSubmittedPayment({ transactionId: utr, amount: 300 });
+        setSubmittedPayment({ transactionId: utr, amount: feeAmount });
         setStep(3);
       }
     } catch (err) {
@@ -189,6 +222,10 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
       setLoading(false);
     }
   };
+
+  const currentFee = eventDetails?.registrationFee || 250;
+  const upiId = eventDetails?.paymentUPI || 'ieee.kare@upi';
+  const qrUri = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(`upi://pay?pa=${upiId}&pn=KARE%20IEEE%20Education%20Society&am=${currentFee}&cu=INR`)}`;
 
   return (
     <div className="modal-overlay">
@@ -210,35 +247,37 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
         </button>
 
         {/* Lock Expiration Bar */}
-        <div style={{
-          background: 'rgba(249, 115, 22, 0.12)',
-          border: '1px solid rgba(249, 115, 22, 0.3)',
-          borderRadius: '12px',
-          padding: '10px 16px',
-          marginBottom: '20px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          fontSize: '0.85rem'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#F97316', fontWeight: 600 }}>
-            <Lock size={16} />
-            <span>Seat Temporarily Locked</span>
+        {step >= 1.5 && (
+          <div style={{
+            background: isExpired ? 'rgba(239, 68, 68, 0.15)' : 'rgba(249, 115, 22, 0.12)',
+            border: `1px solid ${isExpired ? 'rgba(239, 68, 68, 0.35)' : 'rgba(249, 115, 22, 0.3)'}`,
+            borderRadius: '12px',
+            padding: '10px 16px',
+            marginBottom: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            justify: 'space-between',
+            fontSize: '0.85rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: isExpired ? '#F87171' : '#F97316', fontWeight: 600 }}>
+              <Lock size={16} />
+              <span>{isExpired ? 'Seat Lock Expired' : 'Seat Temporarily Locked & Guaranteed'}</span>
+            </div>
+            <div style={{ color: '#FFFFFF', fontWeight: 800, fontFamily: 'monospace' }}>
+              {String(lockTimeLeft.minutes).padStart(2, '0')}:{String(lockTimeLeft.seconds).padStart(2, '0')} remaining
+            </div>
           </div>
-          <div style={{ color: '#FFFFFF', fontWeight: 800, fontFamily: 'monospace' }}>
-            {String(lockTimeLeft.minutes).padStart(2, '0')}:{String(lockTimeLeft.seconds).padStart(2, '0')} remaining
-          </div>
-        </div>
+        )}
 
         <div style={{ marginBottom: '20px' }}>
           <span className="badge badge-orange" style={{ marginBottom: '8px' }}>
-            Step {step} of 2 - {step === 1 ? 'Student Details' : 'Registration Fee Payment'}
+            {step === 1 ? 'Step 1: Participant Details' : step === 1.5 ? 'Step 2: Confirm Details' : step === 2 ? 'Step 3: Payment Verification' : 'Registration Complete'}
           </span>
-          <h2 style={{ fontSize: '1.5rem', color: '#FFF' }}>
-            {step === 1 ? 'Workshop Student Registration' : 'Complete Fee Payment (₹300)'}
+          <h2 style={{ fontSize: '1.45rem', color: '#FFF', margin: '4px 0' }}>
+            {step === 1 ? 'Workshop Student Registration' : step === 1.5 ? 'Confirm Your Details Before Payment' : step === 2 ? `Fee Payment (₹${currentFee})` : 'Registration Successful'}
           </h2>
-          <p style={{ color: '#94A3B8', fontSize: '0.88rem' }}>
-            Google Verified: <strong style={{ color: '#F97316' }}>{user.email}</strong>
+          <p style={{ color: '#94A3B8', fontSize: '0.88rem', margin: 0 }}>
+            Verified Account: <strong style={{ color: '#F97316' }}>{user.email}</strong>
           </p>
         </div>
 
@@ -272,10 +311,11 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
             onClose={onClose}
           />
         ) : step === 1 ? (
-          <form onSubmit={handleNextToPayment}>
+          /* Step 1: Form Details Input */
+          <form onSubmit={handleNextToConfirm}>
             <div className="form-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
               <div className="form-group">
-                <label>Full Name (From Google)</label>
+                <label>Participant Name (Google)</label>
                 <input
                   type="text"
                   name="fullName"
@@ -287,7 +327,7 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
               </div>
 
               <div className="form-group">
-                <label>KLU Email (Verified)</label>
+                <label>Verified Email</label>
                 <input
                   type="email"
                   className="form-control"
@@ -300,7 +340,7 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
 
             <div className="form-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
               <div className="form-group">
-                <label>Student Roll No / ID</label>
+                <label>Student Register / ID Number</label>
                 <input
                   type="text"
                   name="studentId"
@@ -351,7 +391,7 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
               </div>
 
               <div className="form-group">
-                <label>Section (e.g. 24S01)</label>
+                <label>Section</label>
                 <input
                   type="text"
                   name="section"
@@ -361,9 +401,6 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
                   onChange={handleChange}
                   required
                 />
-                <span style={{ fontSize: '0.72rem', color: '#94A3B8', marginTop: '2px', display: 'block' }}>
-                  e.g. 24S01, 23S01, S01
-                </span>
               </div>
             </div>
 
@@ -371,13 +408,94 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
               type="submit"
               disabled={loading}
               className="btn-primary"
-              style={{ width: '100%', justifyContent: 'center', marginTop: '14px', padding: '14px' }}
+              style={{ width: '100%', justifyContent: 'center', marginTop: '16px', padding: '14px' }}
             >
-              Proceed to Fee Payment (₹300)
+              Review Registration Details
               <ArrowRight size={18} />
             </button>
           </form>
+        ) : step === 1.5 ? (
+          /* Step 1.5: Pre-Payment Details Confirmation (Requirement 9) */
+          <div>
+            <div style={{
+              background: 'rgba(249, 115, 22, 0.12)',
+              border: '1px solid rgba(249, 115, 22, 0.3)',
+              borderRadius: '14px',
+              padding: '14px',
+              marginBottom: '20px',
+              fontSize: '0.88rem',
+              color: '#F97316',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px'
+            }}>
+              <AlertCircle size={20} flexShrink={0} />
+              <span>Please check your registration details carefully before proceeding to payment.</span>
+            </div>
+
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.04)',
+              borderRadius: '16px',
+              padding: '20px',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              marginBottom: '20px'
+            }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', fontSize: '0.9rem' }}>
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: '#94A3B8', textTransform: 'uppercase', fontWeight: 600 }}>Participant Name</div>
+                  <div style={{ color: '#FFFFFF', fontWeight: 700, fontSize: '1rem' }}>{formData.fullName || user.displayName || user.name}</div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: '#94A3B8', textTransform: 'uppercase', fontWeight: 600 }}>Verified Email</div>
+                  <div style={{ color: '#38BDF8', fontWeight: 600, wordBreak: 'break-all' }}>{user.email}</div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: '#94A3B8', textTransform: 'uppercase', fontWeight: 600 }}>Student Register ID</div>
+                  <div style={{ color: '#FFFFFF', fontWeight: 600 }}>{formData.studentId} ({formData.department} - {formData.year})</div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: '#94A3B8', textTransform: 'uppercase', fontWeight: 600 }}>Phone Number</div>
+                  <div style={{ color: '#FFFFFF', fontWeight: 600 }}>{formData.phone}</div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: '#94A3B8', textTransform: 'uppercase', fontWeight: 600 }}>Workshop Event</div>
+                  <div style={{ color: '#E2E8F0', fontWeight: 600 }}>{eventDetails?.eventName || 'Intelligent Yield Prediction & AI/ML Workshop'}</div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: '#94A3B8', textTransform: 'uppercase', fontWeight: 600 }}>Registration Fee</div>
+                  <div style={{ color: '#34D399', fontWeight: 800, fontSize: '1.1rem' }}>₹{currentFee}</div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className="btn-secondary"
+                style={{ flex: 1, justifyContent: 'center' }}
+              >
+                <Edit size={16} /> Edit Details
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmAndProceedToPayment}
+                disabled={loading}
+                className="btn-primary"
+                style={{ flex: 2, justifyContent: 'center', padding: '14px' }}
+              >
+                {loading ? 'Reserving Seat...' : `Confirm & Proceed to Payment (₹${currentFee})`}
+                <ArrowRight size={18} />
+              </button>
+            </div>
+          </div>
         ) : (
+          /* Step 2: Payment Section */
           <form onSubmit={handlePaymentSubmit}>
             <div style={{
               background: 'rgba(255, 255, 255, 0.03)',
@@ -388,21 +506,21 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
               textAlign: 'center'
             }}>
               <div style={{ fontSize: '0.8rem', color: '#94A3B8', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>
-                PAYMENT AMOUNT
+                REGISTRATION FEE AMOUNT
               </div>
-              <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#38BDF8' }}>
-                ₹300
+              <div style={{ fontSize: '2.4rem', fontWeight: 900, color: '#38BDF8' }}>
+                ₹{currentFee}
               </div>
-              <div style={{ fontSize: '0.8rem', color: '#34D399', marginTop: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                <ShieldCheck size={16} /> Seat Locked & Guaranteed for 10 Minutes
+              <div style={{ fontSize: '0.82rem', color: '#34D399', marginTop: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                <ShieldCheck size={16} /> Seat Locked & Guaranteed for {lockDurationMinutes} Minutes
               </div>
 
               <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', textAlign: 'center', fontSize: '0.85rem' }}>
                 <p style={{ color: '#CBD5E1', marginBottom: '12px' }}>
-                  Pay via UPI ID: <strong style={{ color: '#F97316' }}>{eventDetails?.paymentUPI || 'ieee.kare@upi'}</strong> or scan QR code below.
+                  Pay via UPI ID: <strong style={{ color: '#F97316' }}>{upiId}</strong> or scan QR code below.
                 </p>
 
-                {/* Admin Controlled Payment QR Code */}
+                {/* Scannable Payment QR Code */}
                 {eventDetails?.paymentQRActive !== false && (
                   <div style={{
                     background: '#FFFFFF',
@@ -415,8 +533,9 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
                     margin: '0 auto 8px auto'
                   }}>
                     <img
-                      src={eventDetails?.paymentQR || '/assets/payment-qr.png'}
+                      src={qrImageFailed ? qrUri : (eventDetails?.paymentQR || '/assets/payment-qr.png')}
                       alt="UPI Payment QR Code"
+                      onError={() => setQrImageFailed(true)}
                       style={{ width: '100%', height: 'auto', display: 'block', borderRadius: '8px' }}
                     />
                   </div>
@@ -514,7 +633,7 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
             <div style={{ display: 'flex', gap: '12px' }}>
               <button
                 type="button"
-                onClick={() => setStep(1)}
+                onClick={() => setStep(1.5)}
                 className="btn-secondary"
                 style={{ flex: 1, justifyContent: 'center' }}
               >
@@ -522,11 +641,11 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
               </button>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || isExpired}
                 className="btn-primary"
-                style={{ flex: 2, justifyContent: 'center', padding: '14px' }}
+                style={{ flex: 2, justifyContent: 'center', padding: '14px', opacity: (loading || isExpired) ? 0.6 : 1 }}
               >
-                {loading ? 'Confirming Seat...' : 'Confirm Registration (₹300 PAID)'}
+                {loading ? 'Confirming Seat...' : isExpired ? 'Seat Lock Expired' : `Confirm Registration (₹${currentFee} PAID)`}
                 <CheckCircle2 size={18} />
               </button>
             </div>

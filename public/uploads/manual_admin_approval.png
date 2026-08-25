@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400" fill="none">
+  <rect width="600" height="400" rx="16" fill="#0F172A"/>
+  <rect x="2" y="2" width="596" height="396" rx="14" stroke="#38BDF8" stroke-width="3" stroke-dasharray="8 8"/>
+  <circle cx="300" cy="140" r="48" fill="#38BDF8" fill-opacity="0.15" stroke="#38BDF8" stroke-width="3"/>
+  <path d="M280 140L295 155L325 125" stroke="#38BDF8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="300" y="230" text-anchor="middle" fill="#FFFFFF" font-family="system-ui, sans-serif" font-size="22" font-weight="800" letter-spacing="0.5">DIRECT ADMIN VERIFICATION</text>
+  <text x="300" y="260" text-anchor="middle" fill="#38BDF8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">IEEE Education Society National Workshop</text>
+  <rect x="150" y="290" width="300" height="40" rx="20" fill="rgba(56, 189, 248, 0.1)" stroke="rgba(56, 189, 248, 0.3)" stroke-width="1"/>
+  <text x="300" y="315" text-anchor="middle" fill="#94A3B8" font-family="monospace" font-size="13" font-weight="700">STATUS: PAYMENT VERIFIED & APPROVED</text>
+</svg>

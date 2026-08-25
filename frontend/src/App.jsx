@@ -28,7 +28,7 @@ const AppContent = () => {
   const isTokenRoute = window.location.pathname.startsWith('/registration/token') || window.location.pathname.startsWith('/token');
   const isMyRegistrationsRoute = window.location.pathname.startsWith('/my-registrations') || window.location.pathname.startsWith('/registration');
 
-  // Initial site load transition - 4.2 second splash screen display
+  // Initial site load transition - 5.0 second total splash screen opening
   useEffect(() => {
     const timer = setTimeout(() => {
       setPageLoading(false);
@@ -39,7 +39,7 @@ const AppContent = () => {
           setAuthModalOpen(true);
         }
       }
-    }, 4200);
+    }, 4300); // 4.3s display + 0.7s smooth fade out = 5 seconds total
     return () => clearTimeout(timer);
   }, [user, isMyRegistrationsRoute, isTokenRoute]);
 
@@ -61,27 +61,21 @@ const AppContent = () => {
   };
 
   const handleRegisterClick = () => {
-    const el = document.getElementById('registration');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    } else {
-      triggerTransition(() => {
-        if (!user) {
-          setAuthModalOpen(true);
-        } else if (registrationState?.registration) {
-          setDashboardOpen(true);
-        } else {
-          setRegModalOpen(true);
-        }
-      });
-    }
+    triggerTransition(() => {
+      if (!user) {
+        setAuthModalOpen(true);
+      } else if (registrationState?.registration?.seatStatus === 'CONFIRMED' || registrationState?.registration?.status === 'PAYMENT_VERIFIED') {
+        setDashboardOpen(true);
+      } else {
+        setRegModalOpen(true);
+      }
+    });
   };
 
   const handleAuthSuccess = () => {
     triggerTransition(() => {
       setAuthModalOpen(false);
-      const el = document.getElementById('registration');
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      setRegModalOpen(true);
     });
   };
 

@@ -4,7 +4,7 @@ import { Clock, ShieldAlert, CheckCircle2, Copy, ExternalLink, ArrowRight } from
 const PaymentSubmittedPage = ({ registration, payment, eventDetails, onViewToken, onClose }) => {
   const regId = registration?.registrationId || 'EDS-WS-001';
   const utr = payment?.transactionId || registration?.transactionId || 'Submitted';
-  const amount = payment?.amount || eventDetails?.registrationFee || 300;
+  const amount = payment?.amount || eventDetails?.registrationFee || 250;
 
   const handleCopyRegId = () => {
     navigator.clipboard.writeText(regId);
@@ -85,7 +85,7 @@ const PaymentSubmittedPage = ({ registration, payment, eventDetails, onViewToken
           borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
           marginBottom: '12px'
         }}>
-          <span style={{ color: '#94A3B8', fontSize: '0.85rem' }}>Registration ID</span>
+          <span style={{ color: '#94A3B8', fontSize: '0.85rem' }}>Participant ID</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ color: '#F97316', fontWeight: 800, fontSize: '1.05rem', fontFamily: 'monospace' }}>
               {regId}

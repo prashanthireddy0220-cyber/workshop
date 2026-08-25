@@ -70,7 +70,7 @@ const RegistrationSuccessCard = ({ registration, eventDetails, onOpenToken, onOp
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', fontSize: '0.9rem' }}>
           <div>
             <div style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 600, textTransform: 'uppercase' }}>
-              Registration ID
+              Participant ID
             </div>
             <div style={{ color: '#F97316', fontWeight: 800, fontSize: '1rem', fontFamily: 'monospace' }}>
               {regId}
@@ -81,8 +81,8 @@ const RegistrationSuccessCard = ({ registration, eventDetails, onOpenToken, onOp
             <div style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 600, textTransform: 'uppercase' }}>
               Payment Status
             </div>
-            <div style={{ color: '#34D399', fontWeight: 800, fontSize: '0.95rem' }}>
-              VERIFIED & PAID
+            <div style={{ color: (registration.paymentStatus === 'PAID' || registration.paymentStatus === 'VERIFIED') ? '#34D399' : '#F97316', fontWeight: 800, fontSize: '0.95rem' }}>
+              {(registration.paymentStatus === 'PAID' || registration.paymentStatus === 'VERIFIED') ? 'VERIFIED & PAID' : 'PENDING ADMIN VERIFICATION'}
             </div>
           </div>
 
@@ -91,7 +91,7 @@ const RegistrationSuccessCard = ({ registration, eventDetails, onOpenToken, onOp
               Participant Name
             </div>
             <div style={{ color: '#FFFFFF', fontWeight: 600 }}>
-              {registration.fullName}
+              {registration.fullName || registration.name || 'Participant'}
             </div>
           </div>
 

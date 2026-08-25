@@ -37,7 +37,7 @@ const eventSchema = new mongoose.Schema(
     registrationFee: {
       type: Number,
       required: true,
-      default: 300
+      default: 250
     },
     registrationOpen: {
       type: Boolean,

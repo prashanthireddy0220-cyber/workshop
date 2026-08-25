@@ -1,7 +1,7 @@
 import React from 'react';
 import { IndianRupee, Award, ShieldCheck } from 'lucide-react';
 
-const RegistrationFeeCard = ({ fee = 300 }) => {
+const RegistrationFeeCard = ({ fee = 250 }) => {
   return (
     <div className="glass-card" style={{
       padding: '24px',
@@ -12,7 +12,7 @@ const RegistrationFeeCard = ({ fee = 300 }) => {
       boxShadow: '0 12px 32px rgba(0, 0, 0, 0.4)',
       display: 'flex',
       flexDirection: 'column',
-      justify: 'space-between'
+      justify: 'center'
     }}>
       <div>
         <div style={{
@@ -26,7 +26,7 @@ const RegistrationFeeCard = ({ fee = 300 }) => {
           REGISTRATION FEE
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '14px' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '0px' }}>
           <span style={{ fontSize: '2.4rem', fontWeight: 800, color: '#FFFFFF', lineHeight: 1 }}>
             ₹{fee}
           </span>
@@ -34,22 +34,6 @@ const RegistrationFeeCard = ({ fee = 300 }) => {
             / per participant
           </span>
         </div>
-      </div>
-
-      <div style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '8px',
-        padding: '8px 14px',
-        borderRadius: '10px',
-        background: 'rgba(56, 189, 248, 0.12)',
-        border: '1px solid rgba(56, 189, 248, 0.25)',
-        color: '#38BDF8',
-        fontSize: '0.85rem',
-        fontWeight: 600
-      }}>
-        <Award size={16} color="#38BDF8" />
-        <span>Includes Participation Certificate & IEEE Kit</span>
       </div>
     </div>
   );

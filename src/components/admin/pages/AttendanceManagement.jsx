@@ -44,7 +44,7 @@ const AttendanceManagement = () => {
   };
 
   const exportCSV = () => {
-    const headers = ['Registration ID', 'Student Name', 'Student ID', 'Email', 'Phone', 'Department', 'Year', 'Attendance Status'];
+    const headers = ['Participant ID', 'Student Name', 'Student ID', 'Email', 'Phone', 'Department', 'Year', 'Attendance Status'];
     const rows = filteredList.map((r) => [
       r.registrationId,
       `"${r.fullName}"`,

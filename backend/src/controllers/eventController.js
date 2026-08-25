@@ -14,7 +14,8 @@ const getEventDetails = async (req, res) => {
         endTime: '05:00 PM',
         venue: process.env.EVENT_LOCATION || 'IEEE Tech Hall, KARE Campus',
         capacity: parseInt(process.env.EVENT_CAPACITY || '200'),
-        registrationFee: parseInt(process.env.REGISTRATION_FEE || '300'),
+        registrationFee: parseInt(process.env.REGISTRATION_FEE || '250'),
+        seatLockDurationMinutes: parseInt(process.env.SEAT_LOCK_MINUTES || '10'),
         registrationOpen: true,
         paymentUPI: process.env.PAYMENT_UPI_ID || 'ieee.kare@upi',
         paymentQR: '/assets/payment-qr.png',
@@ -36,7 +37,8 @@ const getEventStatus = async (req, res) => {
     let event = await Event.findOne();
     
     const capacity = event ? event.capacity : parseInt(process.env.EVENT_CAPACITY || '200');
-    const registrationFee = event ? event.registrationFee : parseInt(process.env.REGISTRATION_FEE || '300');
+    const registrationFee = event ? event.registrationFee : parseInt(process.env.REGISTRATION_FEE || '250');
+    const seatLockDurationMinutes = parseInt(process.env.SEAT_LOCK_MINUTES || '10');
     const registrationStart = event?.registrationStart || '2026-08-01T00:00:00.000Z';
     const registrationEnd = event?.registrationEnd || event?.registrationDeadline || '2026-08-28T23:59:59.000Z';
     const registrationOpen = event ? event.registrationOpen : true;
@@ -53,7 +55,7 @@ const getEventStatus = async (req, res) => {
       ]
     });
 
-    // Count active locked seats (lockedAt within 10 minutes OR lockExpiresAt > now)
+    // Count active locked seats (lockedAt within seatLockDurationMinutes OR lockExpiresAt > now)
     const lockedCount = await Registration.countDocuments({
       seatStatus: 'LOCKED',
       lockExpiresAt: { $gt: now }
@@ -85,6 +87,7 @@ const getEventStatus = async (req, res) => {
       remaining: available,
       registered: confirmedCount,
       registrationFee,
+      seatLockDurationMinutes,
       registrationStart,
       registrationEnd,
       serverTime: now.toISOString(),

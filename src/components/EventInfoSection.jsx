@@ -21,7 +21,7 @@ const EventInfoSection = () => {
               <h3 style={{ fontSize: '1.2rem', color: '#FFF' }}>Date & Deadline</h3>
             </div>
             <p style={{ color: '#CBD5E1', fontSize: '0.95rem', marginBottom: '8px' }}>
-              <strong>Event Date:</strong> September 15, 2026
+              <strong>Event Date:</strong> September 15-16, 2026 (2-Day Workshop)
             </p>
             <p style={{ color: '#CBD5E1', fontSize: '0.95rem' }}>
               <strong>Registration Deadline:</strong> September 14, 2026 (or until seats fill)

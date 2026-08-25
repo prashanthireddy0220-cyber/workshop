@@ -189,13 +189,24 @@ const getRegistrationsList = async (req, res) => {
     let registrations = await Registration.find(filter).sort({ createdAt: -1 }).lean();
 
     const regIds = registrations.map((r) => r.registrationId);
-    const payments = await Payment.find({ registrationId: { $in: regIds } }).lean();
+    const userIds = registrations.map((r) => r.userId).filter(Boolean);
+
+    const payments = await Payment.find({
+      $or: [
+        { registrationId: { $in: regIds } },
+        { userId: { $in: userIds } }
+      ]
+    }).lean();
+
     const attendances = await Attendance.find({ registrationId: { $in: regIds } }).lean();
     const tickets = await Ticket.find({ registrationId: { $in: regIds } }).lean();
     const certificates = await Certificate.find({ registrationId: { $in: regIds } }).lean();
 
     const paymentMap = {};
-    payments.forEach((p) => (paymentMap[p.registrationId] = p));
+    payments.forEach((p) => {
+      if (p.registrationId) paymentMap[p.registrationId] = p;
+      if (p.userId) paymentMap[p.userId.toString()] = p;
+    });
 
     const attendanceMap = {};
     attendances.forEach((a) => (attendanceMap[a.registrationId] = a));
@@ -206,13 +217,39 @@ const getRegistrationsList = async (req, res) => {
     const certMap = {};
     certificates.forEach((c) => (certMap[c.registrationId] = c));
 
-    const enrichedList = registrations.map((reg) => ({
-      ...reg,
-      payment: paymentMap[reg.registrationId] || null,
-      ticket: ticketMap[reg.registrationId] || null,
-      attendance: attendanceMap[reg.registrationId] ? attendanceMap[reg.registrationId].checkedIn : false,
-      certificate: certMap[reg.registrationId] || null
-    }));
+    const enrichedList = registrations.map((reg) => {
+      let p = paymentMap[reg.registrationId] || paymentMap[reg.userId?.toString()] || null;
+
+      if (p) {
+        // Cross-populate screenshot fields
+        if (!p.upiScreenshotUrl && p.screenshotUrl) p.upiScreenshotUrl = p.screenshotUrl;
+        if (!p.screenshotUrl && p.upiScreenshotUrl) p.screenshotUrl = p.upiScreenshotUrl;
+
+        // Fallback for verified status with missing screenshot URLs
+        if ((!p.upiScreenshotUrl || !p.screenshotUrl) && (p.status === 'VERIFIED' || reg.status === 'PAYMENT_VERIFIED' || reg.paymentStatus === 'VERIFIED')) {
+          p.upiScreenshotUrl = '/uploads/manual_admin_approval.png';
+          p.screenshotUrl = '/uploads/manual_admin_approval.png';
+        }
+      } else if (reg.paymentStatus === 'VERIFIED' || reg.paymentStatus === 'PAID' || reg.status === 'PAYMENT_VERIFIED') {
+        p = {
+          registrationId: reg.registrationId,
+          userId: reg.userId,
+          amount: 300,
+          transactionId: reg.transactionId || `VERIFIED-DIRECT`,
+          screenshotUrl: '/uploads/manual_admin_approval.png',
+          upiScreenshotUrl: '/uploads/manual_admin_approval.png',
+          status: 'VERIFIED'
+        };
+      }
+
+      return {
+        ...reg,
+        payment: p,
+        ticket: ticketMap[reg.registrationId] || null,
+        attendance: attendanceMap[reg.registrationId] ? attendanceMap[reg.registrationId].checkedIn : false,
+        certificate: certMap[reg.registrationId] || null
+      };
+    });
 
     if (attendanceStatus) {
       const isAttended = attendanceStatus === 'ATTENDED';
@@ -250,15 +287,18 @@ const approvePayment = async (req, res) => {
       payment = await Payment.create({
         registrationId: registration.registrationId,
         userId: registration.userId,
-        amount: 250,
+        amount: 300,
         transactionId: `UPI-ADMIN-${Date.now()}`,
         screenshotUrl: '/uploads/manual_admin_approval.png',
+        upiScreenshotUrl: '/uploads/manual_admin_approval.png',
         status: 'VERIFIED',
         verifiedBy: req.user ? req.user._id : null,
         verifiedAt: Date.now()
       });
     } else {
       payment.status = 'VERIFIED';
+      if (!payment.screenshotUrl) payment.screenshotUrl = '/uploads/manual_admin_approval.png';
+      if (!payment.upiScreenshotUrl) payment.upiScreenshotUrl = payment.screenshotUrl;
       payment.verifiedBy = req.user ? req.user._id : null;
       payment.verifiedAt = Date.now();
       payment.rejectionReason = '';
@@ -667,6 +707,7 @@ const directRegistrationAdmin = async (req, res) => {
       amount: 300,
       transactionId: `DIRECT-ADMIN-${Date.now()}`,
       screenshotUrl: '/uploads/manual_admin_approval.png',
+      upiScreenshotUrl: '/uploads/manual_admin_approval.png',
       status: 'VERIFIED',
       submittedAt: Date.now(),
       verifiedAt: Date.now()
@@ -676,6 +717,64 @@ const directRegistrationAdmin = async (req, res) => {
       success: true,
       message: 'Direct registration completed successfully!',
       registration: newReg
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const updatePaymentProofAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { screenshotUrl, transactionId } = req.body;
+
+    let upiScreenshotUrl = screenshotUrl || '';
+    if (req.file) {
+      try {
+        const cloudinaryResult = await uploadToCloudinary(req.file.buffer);
+        upiScreenshotUrl = cloudinaryResult.secure_url;
+      } catch (uploadError) {
+        console.error('[Admin Upload Error]', uploadError);
+      }
+    }
+
+    let payment = await findPaymentByRef(id);
+    let registration = await Registration.findOne({ registrationId: id });
+    if (!registration && payment) {
+      registration = await Registration.findOne({ registrationId: payment.registrationId });
+    }
+
+    if (!registration) {
+      return res.status(404).json({ success: false, message: 'Registration record not found' });
+    }
+
+    if (!payment) {
+      payment = await Payment.create({
+        registrationId: registration.registrationId,
+        userId: registration.userId,
+        amount: 300,
+        transactionId: transactionId || `ADMIN-PROOF-${Date.now()}`,
+        screenshotUrl: upiScreenshotUrl || '/uploads/manual_admin_approval.png',
+        upiScreenshotUrl: upiScreenshotUrl || '/uploads/manual_admin_approval.png',
+        status: 'VERIFIED',
+        submittedAt: Date.now(),
+        verifiedAt: Date.now()
+      });
+    } else {
+      if (upiScreenshotUrl) {
+        payment.screenshotUrl = upiScreenshotUrl;
+        payment.upiScreenshotUrl = upiScreenshotUrl;
+      }
+      if (transactionId) {
+        payment.transactionId = transactionId;
+      }
+      await payment.save();
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Payment proof updated successfully!',
+      payment
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
@@ -704,5 +803,6 @@ module.exports = {
   deleteRegistrationRecord,
   deleteAllRegistrations,
   bulkApprovePayments,
-  directRegistrationAdmin
+  directRegistrationAdmin,
+  updatePaymentProofAdmin
 };

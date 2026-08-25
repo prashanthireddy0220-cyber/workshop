@@ -22,7 +22,6 @@ const Navbar = ({ onOpenAuth, onOpenDashboard }) => {
     { label: 'Home', href: '#home', id: 'home' },
     { label: 'About', href: '#about', id: 'about' },
     { label: 'Topics', href: '#topics', id: 'topics' },
-    { label: 'Schedule', href: '#schedule', id: 'schedule' },
     { label: 'Details', href: '#details', id: 'details' }
   ];
 

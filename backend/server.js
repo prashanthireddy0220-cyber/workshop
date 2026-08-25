@@ -4,7 +4,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
-const mongoose = require('mongoose');
+const fs = require('fs');
 const connectDB = require('./src/config/db');
 
 // Load environment variables
@@ -14,6 +14,12 @@ const app = express();
 
 // Trust reverse proxy headers (required for Render, Vercel, Heroku for express-rate-limit)
 app.set('trust proxy', 1);
+
+// Ensure Uploads Directory Exists
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 // Connect Database
 connectDB();

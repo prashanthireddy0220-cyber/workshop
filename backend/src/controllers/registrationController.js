@@ -44,8 +44,8 @@ const generateSequentialRegistrationId = async () => {
       }
     }
   }
-  const nextSeq = (maxNum + 1).toString().padStart(3, '0');
-  return `EDS-WS-${nextSeq}`;
+  const nextSeq = (maxNum + 1).toString().padStart(4, '0');
+  return `REG-KLU-5775-${nextSeq}`;
 };
 
 const createRegistration = async (req, res) => {
@@ -225,18 +225,19 @@ const lockSeat = async (req, res) => {
         });
       }
 
-      // If active lock exists, extend/refresh lock for 10 minutes
+      // If active lock exists, extend/refresh lock
+      const lockMinutes = parseInt(process.env.SEAT_LOCK_MINUTES || '10', 10);
       if (existingReg.seatStatus === 'LOCKED' && existingReg.lockExpiresAt > now) {
-        const lockDuration = 10 * 60 * 1000; // 10 minutes
+        const lockDuration = lockMinutes * 60 * 1000;
         existingReg.lockedAt = now;
         existingReg.lockExpiresAt = new Date(now.getTime() + lockDuration);
         await existingReg.save();
 
         return res.status(200).json({
           success: true,
-          message: 'Seat locked for payment (10 minutes remaining)',
+          message: `Seat locked for payment (${lockMinutes} minutes remaining)`,
           registration: existingReg,
-          lockDurationMinutes: 10,
+          lockDurationMinutes: lockMinutes,
           expiresAt: existingReg.lockExpiresAt
         });
       }
@@ -265,7 +266,8 @@ const lockSeat = async (req, res) => {
 
     // 5. Create new lock
     const registrationId = await generateSequentialRegistrationId();
-    const lockDuration = 10 * 60 * 1000; // 10 minutes
+    const lockMinutes = parseInt(process.env.SEAT_LOCK_MINUTES || '10', 10);
+    const lockDuration = lockMinutes * 60 * 1000;
     const lockExpiresAt = new Date(now.getTime() + lockDuration);
 
     const {
@@ -295,9 +297,9 @@ const lockSeat = async (req, res) => {
 
       return res.status(200).json({
         success: true,
-        message: 'Seat locked successfully for 10 minutes.',
+        message: `Seat locked successfully for ${lockMinutes} minutes.`,
         registration: existingReg,
-        lockDurationMinutes: 10,
+        lockDurationMinutes: lockMinutes,
         expiresAt: lockExpiresAt
       });
     }
@@ -325,9 +327,9 @@ const lockSeat = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: 'Seat locked successfully for 10 minutes.',
+      message: `Seat locked successfully for ${lockMinutes} minutes.`,
       registration: newRegistration,
-      lockDurationMinutes: 10,
+      lockDurationMinutes: lockMinutes,
       expiresAt: lockExpiresAt
     });
   } catch (error) {
@@ -353,44 +355,41 @@ const confirmPayment = async (req, res) => {
     }
 
     const now = new Date();
+    const lockMinutes = parseInt(process.env.SEAT_LOCK_MINUTES || '10', 10);
     if (registration.seatStatus === 'LOCKED' && registration.lockExpiresAt < now) {
       return res.status(400).json({
         success: false,
-        message: 'Your 10-minute seat lock has expired. Please initiate registration again.'
+        message: `Your ${lockMinutes}-minute seat lock has expired. Please initiate registration again.`
       });
     }
 
-    // Convert status to CONFIRMED & PAID
-    registration.seatStatus = 'CONFIRMED';
-    registration.paymentStatus = 'PAID';
-    registration.status = 'PAYMENT_VERIFIED';
+    // Keep payment status as PENDING for admin manual verification
+    registration.paymentStatus = 'PENDING';
+    registration.status = 'PAYMENT_SUBMITTED';
     await registration.save();
 
-    // Create or update Payment record
+    // Create or update Payment record with PENDING status
     let payment = await Payment.findOne({ registrationId: registration.registrationId });
     if (!payment) {
       payment = await Payment.create({
         registrationId: registration.registrationId,
         userId: registration.userId,
         transactionId: transactionId || `UPI-${Date.now()}`,
-        amount: parseInt(process.env.REGISTRATION_FEE || '300'),
+        amount: parseInt(process.env.REGISTRATION_FEE || '250'),
         paymentMethod: paymentMethod || 'UPI',
-        status: 'VERIFIED',
-        verifiedAt: now
+        status: 'PENDING',
+        submittedAt: now
       });
     } else {
-      payment.status = 'VERIFIED';
+      payment.status = 'PENDING';
       payment.transactionId = transactionId || payment.transactionId;
-      payment.verifiedAt = now;
+      payment.submittedAt = now;
       await payment.save();
     }
 
-    let event = await Event.findOne() || { eventName: 'AI/ML Workshop', date: '2026-09-15', venue: 'IEEE Tech Hall' };
-    sendRegistrationSuccessEmail(registration, event);
-
     return res.status(200).json({
       success: true,
-      message: 'Registration and Payment confirmed successfully!',
+      message: 'Payment proof submitted successfully! Pending admin verification.',
       registration,
       payment
     });

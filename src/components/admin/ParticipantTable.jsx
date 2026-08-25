@@ -81,7 +81,7 @@ const ParticipantTable = ({
         <table className="custom-table">
           <thead>
             <tr>
-              <th>Reg ID</th>
+              <th>Participant ID</th>
               <th>Participant Name</th>
               <th>Email / Phone</th>
               <th>Dept / Year</th>
@@ -99,7 +99,7 @@ const ParticipantTable = ({
               </tr>
             ) : (
               registrations.map((reg) => {
-                const paymentStatus = reg.payment ? reg.payment.status : 'NOT_SUBMITTED';
+                const paymentStatus = reg.payment?.status || reg.paymentStatus || (reg.status === 'PAYMENT_VERIFIED' ? 'VERIFIED' : 'NOT_SUBMITTED');
 
                 return (
                   <tr key={reg._id}>

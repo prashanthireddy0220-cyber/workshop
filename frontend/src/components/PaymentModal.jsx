@@ -59,7 +59,7 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
       const formData = new FormData();
       formData.append('registrationId', registrationId);
       formData.append('transactionId', utr);
-      formData.append('amount', 300);
+      formData.append('amount', 250);
       formData.append('screenshot', file);
 
       const res = await submitPayment(formData);
@@ -98,7 +98,7 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
           <span className="badge badge-orange" style={{ marginBottom: '8px' }}>Step 2 of 2</span>
           <h2 style={{ fontSize: '1.6rem', color: '#FFF' }}>Payment Submission</h2>
           <p style={{ color: '#94A3B8', fontSize: '0.9rem' }}>
-            Registration ID: <strong style={{ color: '#F97316' }}>{registrationId}</strong>
+            Participant ID: <strong style={{ color: '#F97316' }}>{registrationId}</strong>
           </p>
         </div>
 
@@ -117,7 +117,7 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
           {/* UPI QR Code */}
           <div style={{
             background: '#FFF',
-            padding: '10px',
+            padding: '8px',
             borderRadius: '12px',
             width: '110px',
             height: '110px',
@@ -127,15 +127,19 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
             justifyContent: 'center',
             flexShrink: 0
           }}>
-            <QrCode size={75} color="#0F172A" />
-            <span style={{ fontSize: '0.65rem', color: '#0F172A', fontWeight: 800 }}>SCAN TO PAY ₹300</span>
+            <img
+              src="/assets/payment-qr.png"
+              alt="UPI Payment QR Code"
+              style={{ width: '85px', height: '85px', display: 'block', borderRadius: '6px' }}
+            />
+            <span style={{ fontSize: '0.62rem', color: '#0F172A', fontWeight: 800 }}>SCAN TO PAY ₹250</span>
           </div>
 
           <div style={{ flex: 1, minWidth: '200px' }}>
             <h4 style={{ color: '#FFF', marginBottom: '6px', fontSize: '0.95rem' }}>Payment Instructions</h4>
             <p style={{ color: '#94A3B8', fontSize: '0.82rem', marginBottom: '6px', lineHeight: 1.4 }}>
               1. Scan QR code using GPay, PhonePe, or Paytm.<br />
-              2. Pay registration fee: <strong style={{ color: '#F97316' }}>₹300</strong>.<br />
+              2. Pay registration fee: <strong style={{ color: '#F97316' }}>₹250</strong>.<br />
               3. Upload payment screenshot & enter 12-digit UTR ID.
             </p>
             <div style={{ fontSize: '0.85rem', color: '#38BDF8', fontWeight: 700 }}>

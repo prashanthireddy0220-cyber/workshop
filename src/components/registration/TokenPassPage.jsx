@@ -139,8 +139,13 @@ const TokenPassPage = ({ registrationId, registration: propRegistration, onClose
             </div>
 
             <div>
-              <span style={{ fontSize: '0.75rem', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Registration ID</span>
+              <span style={{ fontSize: '0.75rem', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Participant ID</span>
               <h4 style={{ fontSize: '1.2rem', color: '#F97316', fontWeight: 800, margin: '2px 0 0 0', fontFamily: 'monospace' }}>{targetRegId}</h4>
+            </div>
+
+            <div>
+              <span style={{ fontSize: '0.75rem', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Email</span>
+              <p style={{ color: '#38BDF8', fontWeight: 600, margin: '2px 0 0 0', fontSize: '0.9rem', wordBreak: 'break-all' }}>{email || 'Verified Account'}</p>
             </div>
 
             <div>
@@ -151,12 +156,21 @@ const TokenPassPage = ({ registrationId, registration: propRegistration, onClose
             </div>
 
             <div>
-              <span style={{ fontSize: '0.75rem', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>College</span>
-              <p style={{ color: '#E2E8F0', fontWeight: 600, margin: '2px 0 0 0', fontSize: '0.92rem' }}>{college}</p>
+              <span style={{ fontSize: '0.75rem', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Payment Status</span>
+              <p style={{ color: isVerified ? '#34D399' : '#FACC15', fontWeight: 800, margin: '2px 0 0 0', fontSize: '0.92rem' }}>
+                {isVerified ? 'VERIFIED & PAID' : 'PENDING'}
+              </p>
+            </div>
+
+            <div>
+              <span style={{ fontSize: '0.75rem', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Verification Status</span>
+              <p style={{ color: isVerified ? '#38BDF8' : '#FACC15', fontWeight: 700, margin: '2px 0 0 0', fontSize: '0.92rem' }}>
+                {isVerified ? 'Approved by Admin' : 'Pending Verification'}
+              </p>
             </div>
           </div>
 
-          {/* Event Venue Info Box */}
+          {/* Event Details Box */}
           <div style={{
             background: 'rgba(255, 255, 255, 0.03)',
             borderRadius: '16px',
@@ -168,9 +182,12 @@ const TokenPassPage = ({ registrationId, registration: propRegistration, onClose
             gap: '8px',
             fontSize: '0.88rem'
           }}>
+            <div style={{ color: '#F97316', fontWeight: 800, fontSize: '0.95rem' }}>
+              Workshop: Intelligent Yield Prediction & AI/ML Models (2-Day Workshop)
+            </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#CBD5E1' }}>
               <Calendar size={16} color="#F97316" />
-              <span>Event Date: <strong>15th September 2026 (09:30 AM - 05:00 PM)</strong></span>
+              <span>Event Date: <strong>15th & 16th September 2026 (09:30 AM - 05:00 PM)</strong></span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#CBD5E1' }}>
               <MapPin size={16} color="#38BDF8" />

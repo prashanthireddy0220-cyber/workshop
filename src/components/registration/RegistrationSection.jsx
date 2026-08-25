@@ -148,114 +148,103 @@ const RegistrationSection = ({ onOpenDashboard }) => {
           </p>
         </div>
 
-        {/* If Already Registered & Confirmed: Display Success Receipt Card */}
-        {isAlreadyConfirmed ? (
-          <div style={{ marginBottom: '40px' }}>
-            <RegistrationSuccessCard
-              registration={registrationState.registration}
-              eventDetails={eventStatus}
-              onOpenToken={() => window.location.href = `/registration/token/${registrationState.registration.registrationId}`}
-              onOpenDashboard={onOpenDashboard}
+        {/* Landing Page Content Grid */}
+        <div>
+          {/* Grid Layout of Cards */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: '24px',
+            marginBottom: '40px'
+          }}>
+            {/* Card 1: Google Auth / Verification */}
+            <GoogleKLUAuth onAuthSuccess={fetchStatus} />
+
+            {/* Card 2: Registration Fee */}
+            <RegistrationFeeCard fee={eventStatus.registrationFee || 250} />
+
+            {/* Card 3: Live Seat Availability & Progress Bar */}
+            <SeatAvailabilityCard
+              capacity={eventStatus.capacity}
+              confirmed={eventStatus.confirmed}
+              locked={eventStatus.locked}
+              available={eventStatus.available}
+              status={eventStatus.status}
+            />
+
+            {/* Card 4: Live Countdown Timer */}
+            <RegistrationCountdownCard
+              registrationEnd={eventStatus.registrationEnd}
+              serverTime={eventStatus.serverTime}
             />
           </div>
-        ) : (
-          <div>
-            {/* Grid Layout of Cards */}
+
+          {/* Primary Action CTA Button */}
+          <div style={{ textAlign: 'center', marginTop: '30px' }}>
+            {eventStatus.status === 'CLOSED' ? (
+              <button
+                disabled
+                className="btn-secondary"
+                style={{
+                  padding: '18px 48px',
+                  fontSize: '1.15rem',
+                  borderRadius: '16px',
+                  opacity: 0.6,
+                  cursor: 'not-allowed',
+                  background: 'rgba(239, 68, 68, 0.15)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  color: '#F87171'
+                }}
+              >
+                REGISTRATION CLOSED
+              </button>
+            ) : eventStatus.status === 'FULL' ? (
+              <button
+                disabled
+                className="btn-secondary"
+                style={{
+                  padding: '18px 48px',
+                  fontSize: '1.15rem',
+                  borderRadius: '16px',
+                  opacity: 0.6,
+                  cursor: 'not-allowed',
+                  background: 'rgba(239, 68, 68, 0.15)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  color: '#F87171'
+                }}
+              >
+                REGISTRATION FULL
+              </button>
+            ) : (
+              <button
+                onClick={handleContinueClick}
+                className="btn-primary"
+                style={{
+                  padding: '18px 52px',
+                  fontSize: '1.2rem',
+                  fontWeight: 700,
+                  borderRadius: '16px',
+                  boxShadow: '0 10px 30px rgba(249, 115, 22, 0.4)'
+                }}
+              >
+                {isAlreadyConfirmed ? 'VIEW PASS / DASHBOARD →' : 'CONTINUE REGISTRATION →'}
+              </button>
+            )}
+
             <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-              gap: '24px',
-              marginBottom: '40px'
+              marginTop: '16px',
+              fontSize: '0.85rem',
+              color: '#64748B',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px'
             }}>
-              {/* Card 1: Google Auth / Verification */}
-              <GoogleKLUAuth onAuthSuccess={fetchStatus} />
-
-              {/* Card 2: Registration Fee */}
-              <RegistrationFeeCard fee={eventStatus.registrationFee} />
-
-              {/* Card 3: Live Seat Availability & Progress Bar */}
-              <SeatAvailabilityCard
-                capacity={eventStatus.capacity}
-                confirmed={eventStatus.confirmed}
-                locked={eventStatus.locked}
-                available={eventStatus.available}
-                status={eventStatus.status}
-              />
-
-              {/* Card 4: Live Countdown Timer */}
-              <RegistrationCountdownCard
-                registrationEnd={eventStatus.registrationEnd}
-                serverTime={eventStatus.serverTime}
-              />
-            </div>
-
-            {/* Primary Action CTA Button */}
-            <div style={{ textAlign: 'center', marginTop: '30px' }}>
-              {eventStatus.status === 'CLOSED' ? (
-                <button
-                  disabled
-                  className="btn-secondary"
-                  style={{
-                    padding: '18px 48px',
-                    fontSize: '1.15rem',
-                    borderRadius: '16px',
-                    opacity: 0.6,
-                    cursor: 'not-allowed',
-                    background: 'rgba(239, 68, 68, 0.15)',
-                    border: '1px solid rgba(239, 68, 68, 0.3)',
-                    color: '#F87171'
-                  }}
-                >
-                  REGISTRATION CLOSED
-                </button>
-              ) : eventStatus.status === 'FULL' ? (
-                <button
-                  disabled
-                  className="btn-secondary"
-                  style={{
-                    padding: '18px 48px',
-                    fontSize: '1.15rem',
-                    borderRadius: '16px',
-                    opacity: 0.6,
-                    cursor: 'not-allowed',
-                    background: 'rgba(239, 68, 68, 0.15)',
-                    border: '1px solid rgba(239, 68, 68, 0.3)',
-                    color: '#F87171'
-                  }}
-                >
-                  REGISTRATION FULL
-                </button>
-              ) : (
-                <button
-                  onClick={handleContinueClick}
-                  className="btn-primary"
-                  style={{
-                    padding: '18px 52px',
-                    fontSize: '1.2rem',
-                    fontWeight: 700,
-                    borderRadius: '16px',
-                    boxShadow: '0 10px 30px rgba(249, 115, 22, 0.4)'
-                  }}
-                >
-                  {isAlreadyConfirmed ? 'VIEW REGISTRATION PASS →' : 'CONTINUE REGISTRATION →'}
-                </button>
-              )}
-
-              <div style={{
-                marginTop: '16px',
-                fontSize: '0.85rem',
-                color: '#64748B',
-                display: 'flex',
-                alignItems: 'center',
-                justify: 'center',
-                gap: '6px'
-              }}>
-                <ShieldCheck size={16} color="#34D399" />
-                <span>10-Minute Temporary Seat Lock Enabled on Checkout</span>
-              </div>
+              <ShieldCheck size={16} color="#34D399" />
+              <span>10-Minute Temporary Seat Lock Enabled on Checkout</span>
             </div>
           </div>
-        )}
+        </div>
 
         {/* Registration Lock & Payment Modal */}
         <RegistrationLockModal

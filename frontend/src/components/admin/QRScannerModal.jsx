@@ -162,7 +162,7 @@ const QRScannerModal = ({ isOpen, onClose, onCheckInSuccess, selectedWorkshopId 
             <h3 style={{ color: '#F59E0B', fontSize: '1.25rem', fontWeight: 800 }}>Attendance Already Marked</h3>
             <p style={{ color: '#FFF', fontWeight: 700, fontSize: '1.05rem', marginTop: '6px', margin: '6px 0 0 0' }}>{scanResult.participant?.name}</p>
             <p style={{ color: '#94A3B8', fontSize: '0.85rem', marginTop: '4px' }}>
-              Registration ID: <strong style={{ color: '#38BDF8' }}>{scanResult.participant?.registrationId}</strong>
+              Participant ID: <strong style={{ color: '#38BDF8' }}>{scanResult.participant?.registrationId}</strong>
             </p>
             <p style={{ color: '#F59E0B', fontSize: '0.78rem', marginTop: '6px', fontWeight: 600 }}>
               Already Present • Resetting scanner in 3s...
@@ -185,7 +185,7 @@ const QRScannerModal = ({ isOpen, onClose, onCheckInSuccess, selectedWorkshopId 
             <input
               type="text"
               className="form-control"
-              placeholder="Or enter Registration ID (KLU-ML-2026-XXXX) or Ticket ID"
+              placeholder="Or enter Participant ID (REG-KLU-5775-XXXX) or Ticket ID"
               value={manualToken}
               onChange={(e) => setManualToken(e.target.value)}
             />

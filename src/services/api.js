@@ -67,6 +67,10 @@ export const directRegisterAdmin = (data) => api.post('/admin/registrations/dire
 export const bulkVerifyPayments = () => api.put('/admin/payments/bulk-verify');
 export const deleteRegistrationAdmin = (id) => api.delete(`/admin/registrations/${id}`);
 export const deleteAllRegistrationsAdmin = () => api.delete('/admin/registrations');
+export const updatePaymentProofAdmin = (id, formData) =>
+  api.post(`/admin/payments/${id}/proof`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
 
 // Workshop Management API
 export const getAdminWorkshops = () => api.get('/admin/workshops');

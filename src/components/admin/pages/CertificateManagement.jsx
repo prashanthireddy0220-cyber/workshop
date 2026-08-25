@@ -109,7 +109,7 @@ const CertificateManagement = () => {
             <thead>
               <tr style={{ background: 'rgba(255, 255, 255, 0.03)', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', color: '#94A3B8' }}>
                 <th style={{ padding: '14px 20px' }}>Student Name</th>
-                <th style={{ padding: '14px 20px' }}>Registration ID</th>
+                <th style={{ padding: '14px 20px' }}>Participant ID</th>
                 <th style={{ padding: '14px 20px' }}>Email</th>
                 <th style={{ padding: '14px 20px' }}>Certificate Status</th>
                 <th style={{ padding: '14px 20px' }}>Action</th>

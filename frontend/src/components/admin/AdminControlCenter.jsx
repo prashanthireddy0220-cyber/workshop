@@ -78,7 +78,7 @@ const AdminControlCenter = () => {
     organizedBy: 'KARE IEEE Education Society',
     eventDate: '15 & 16 September 2026',
     venue: 'IEEE Tech Hall, KARE Campus',
-    fee: 300,
+    fee: 250,
     upiId: 'ieee.kare@upi',
     volunteerPasscode: '654321',
     maxSpots: 200,
@@ -666,9 +666,17 @@ const AdminControlCenter = () => {
                 </tr>
               ) : (
                 registrations.map((reg, index) => {
-                  const proofUrl = reg.payment?.upiScreenshotUrl || reg.payment?.screenshotUrl || '';
+                  const rawProof = reg.payment?.upiScreenshotUrl || reg.payment?.screenshotUrl || reg.upiScreenshotUrl || reg.screenshotUrl || '';
                   const isVerified = reg.status === 'PAYMENT_VERIFIED' || reg.paymentStatus === 'VERIFIED';
                   const isRejected = reg.status === 'REJECTED' || reg.paymentStatus === 'REJECTED';
+
+                  const proofUrl = rawProof
+                    ? (rawProof.startsWith('http://') || rawProof.startsWith('https://') || rawProof.startsWith('data:'))
+                      ? rawProof
+                      : rawProof.startsWith('/')
+                        ? rawProof
+                        : `/${rawProof}`
+                    : '';
 
                   return (
                     <tr key={reg._id || index} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
@@ -700,11 +708,54 @@ const AdminControlCenter = () => {
 
                       <td style={{ padding: '16px' }}>
                         {proofUrl ? (
-                          <div onClick={() => setSelectedReg(reg)} title="Click to view full screenshot proof" style={{ width: '42px', height: '42px', borderRadius: '50%', overflow: 'hidden', border: '2px solid #38BDF8', cursor: 'pointer', background: '#000' }}>
-                            <img src={proofUrl.startsWith('http') ? proofUrl : `/${proofUrl}`} alt="Payment Proof" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <div
+                            onClick={() => setSelectedReg(reg)}
+                            title="Click to view payment proof"
+                            style={{
+                              width: '42px',
+                              height: '42px',
+                              borderRadius: '50%',
+                              overflow: 'hidden',
+                              border: '2px solid #38BDF8',
+                              cursor: 'pointer',
+                              background: '#000',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}
+                          >
+                            <img
+                              src={proofUrl}
+                              alt="Payment Proof"
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                if (e.target.parentNode) {
+                                  e.target.parentNode.innerHTML = '<span style="font-size:0.65rem;color:#38BDF8;font-weight:800;">PROOF</span>';
+                                }
+                              }}
+                            />
                           </div>
                         ) : (
-                          <span style={{ fontSize: '0.78rem', color: '#64748B' }}>No proof</span>
+                          <button
+                            onClick={() => setSelectedReg(reg)}
+                            title="Click to review/attach payment proof"
+                            style={{
+                              background: 'rgba(56, 189, 248, 0.12)',
+                              border: '1px solid rgba(56, 189, 248, 0.3)',
+                              color: '#38BDF8',
+                              fontSize: '0.75rem',
+                              fontWeight: 700,
+                              padding: '6px 12px',
+                              borderRadius: '8px',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}
+                          >
+                            <Eye size={13} /> View Proof
+                          </button>
                         )}
                       </td>
 

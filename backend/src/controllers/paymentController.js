@@ -73,6 +73,10 @@ const submitPayment = async (req, res) => {
     }
 
     try {
+      const isAlreadyVerified = registration.paymentStatus === 'PAID' || registration.paymentStatus === 'VERIFIED' || registration.seatStatus === 'CONFIRMED';
+      const targetStatus = isAlreadyVerified ? 'VERIFIED' : 'PENDING';
+      const reqFee = parseInt(amount || process.env.REGISTRATION_FEE || '250', 10);
+
       // Check if payment entry exists (re-submission case)
       let payment = await Payment.findOne({ registrationId });
       if (payment) {
@@ -89,8 +93,8 @@ const submitPayment = async (req, res) => {
         payment.screenshotUrl = upiScreenshotUrl;
         payment.upiScreenshotUrl = upiScreenshotUrl;
         payment.upiScreenshotPublicId = upiScreenshotPublicId;
-        payment.amount = amount || payment.amount || 300;
-        payment.status = 'PENDING';
+        payment.amount = reqFee;
+        payment.status = isAlreadyVerified ? 'VERIFIED' : 'PENDING';
         payment.rejectionReason = '';
         payment.submittedAt = Date.now();
         await payment.save();
@@ -98,19 +102,21 @@ const submitPayment = async (req, res) => {
         payment = await Payment.create({
           registrationId,
           userId,
-          amount: amount || 300,
+          amount: reqFee,
           transactionId,
           screenshotUrl: upiScreenshotUrl,
           upiScreenshotUrl,
           upiScreenshotPublicId,
-          status: 'PENDING',
+          status: targetStatus,
           submittedAt: Date.now()
         });
       }
 
-      // Update Registration status
-      registration.status = 'PAYMENT_SUBMITTED';
-      await registration.save();
+      // Update Registration status if not already confirmed
+      if (!isAlreadyVerified) {
+        registration.status = 'PAYMENT_SUBMITTED';
+        await registration.save();
+      }
 
       return res.status(200).json({
         success: true,

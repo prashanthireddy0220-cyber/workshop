@@ -28,23 +28,28 @@ const ParticipantDashboard = ({ isOpen, onClose, onOpenRegistration, onOpenPayme
   const ticket = registrationState?.ticket;
   const attendance = registrationState?.attendance;
   const certificate = registrationState?.certificate;
-  const summary = registrationState?.statusSummary || {};
+  const summary = {
+    registration: registration ? 'REGISTERED' : 'NOT REGISTERED',
+    payment: (registration?.paymentStatus === 'PAID' || registration?.paymentStatus === 'VERIFIED' || payment?.status === 'VERIFIED') ? 'VERIFIED / PAID' : (payment?.status === 'PENDING' ? 'PENDING' : 'NOT PAID'),
+    ticket: ticket ? 'AVAILABLE' : 'NOT AVAILABLE',
+    attendance: attendance && attendance.checkedIn ? 'CHECKED IN' : 'NOT CHECKED IN',
+    certificate: certificate ? 'AVAILABLE' : 'NOT AVAILABLE'
+  };
 
-  const getStatusBadge = (status, text) => {
+  const getStatusBadge = (status) => {
     switch (status) {
-      case 'VERIFIED':
-      case 'Registered':
-      case 'Available':
-      case 'Checked In':
-        return <span className="badge badge-green">✓ {text || status}</span>;
+      case 'VERIFIED / PAID':
+      case 'REGISTERED':
+      case 'AVAILABLE':
+      case 'CHECKED IN':
+        return <span className="badge badge-green">✓ {status}</span>;
       case 'PENDING':
-      case 'PAYMENT_SUBMITTED':
-        return <span className="badge badge-orange">⏳ {text || 'Pending Verification'}</span>;
+        return <span className="badge badge-orange">⏳ {status}</span>;
       case 'REJECTED':
-      case 'PAYMENT_REJECTED':
-        return <span className="badge badge-red">✕ {text || 'Rejected'}</span>;
+      case 'NOT PAID':
+        return <span className="badge badge-red">✕ {status}</span>;
       default:
-        return <span className="badge badge-blue">{text || status || 'Not Started'}</span>;
+        return <span className="badge badge-blue">{status || 'NOT AVAILABLE'}</span>;
     }
   };
 
@@ -86,7 +91,7 @@ const ParticipantDashboard = ({ isOpen, onClose, onOpenRegistration, onOpenPayme
             <p style={{ color: '#94A3B8', fontSize: '0.9rem' }}>{user.email}</p>
             <div style={{ marginTop: '6px', display: 'flex', gap: '8px' }}>
               <span className="badge badge-blue">{user.role.toUpperCase()}</span>
-              {registration && <span className="badge badge-orange">ID: {registration.registrationId}</span>}
+              {registration && <span className="badge badge-orange">Participant ID: {registration.registrationId}</span>}
             </div>
           </div>
         </div>
@@ -192,7 +197,7 @@ const ParticipantDashboard = ({ isOpen, onClose, onOpenRegistration, onOpenPayme
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <Ticket size={14} color="#34D399" />
-                        <span>Registration ID: <strong style={{ color: '#FFF' }}>{registration.registrationId}</strong></span>
+                        <span>Participant ID: <strong style={{ color: '#FFF' }}>{registration.registrationId}</strong></span>
                       </div>
                     </div>
 
