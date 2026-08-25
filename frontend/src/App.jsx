@@ -115,8 +115,7 @@ const AppContent = () => {
   // If visiting http://localhost:5173/admin -> Render Standalone Restricted Admin Portal
   if (isAdminRoute) {
     return (
-      <div className="app-container">
-        <PageLoader isLoading={pageLoading || authLoading} />
+      <div className="app-container" style={{ minHeight: '100vh', background: '#0F172A' }}>
         <AdminPortal />
       </div>
     );
