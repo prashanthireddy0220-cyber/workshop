@@ -305,15 +305,20 @@ const AdminControlCenter = () => {
     }
   };
 
+  // Safe fallbacks for data lists & stats
+  const safeRegistrations = Array.isArray(registrations) ? registrations : [];
+  const safeStats = stats || {};
+
   // Attendance stats calculation
-  const presentCount = registrations.filter(r => r.attendance === true).length;
-  const absentCount = Math.max(0, registrations.length - presentCount);
-  const attendanceRate = registrations.length > 0 ? ((presentCount / registrations.length) * 100).toFixed(0) : 0;
+  const presentCount = safeRegistrations.filter(r => r && (r.attendance === true || r.attendance === 'PRESENT')).length;
+  const absentCount = Math.max(0, safeRegistrations.length - presentCount);
+  const attendanceRate = safeRegistrations.length > 0 ? ((presentCount / safeRegistrations.length) * 100).toFixed(0) : 0;
 
   // Filtered roster for Attendance modal
-  const filteredAttendanceRoster = registrations.filter(r => {
-    if (attendanceTab === 'PRESENT') return r.attendance === true;
-    if (attendanceTab === 'ABSENT') return r.attendance !== true;
+  const filteredAttendanceRoster = safeRegistrations.filter(r => {
+    if (!r) return false;
+    if (attendanceTab === 'PRESENT') return r.attendance === true || r.attendance === 'PRESENT';
+    if (attendanceTab === 'ABSENT') return r.attendance !== true && r.attendance !== 'PRESENT';
     return true;
   });
 
@@ -499,11 +504,11 @@ const AdminControlCenter = () => {
                 TOTAL REGISTRATIONS
               </span>
               <div style={{ fontSize: '2.4rem', fontWeight: 900, color: '#FFFFFF', marginTop: '6px' }}>
-                {stats.totalRegistrations}
+                {safeStats.totalRegistrations || 0}
               </div>
               <div style={{ fontSize: '0.8rem', marginTop: '6px', display: 'flex', gap: '12px' }}>
-                <span style={{ color: '#4ADE80', fontWeight: 700 }}>Approved: {stats.confirmedRegistrations}</span>
-                <span style={{ color: '#FB923C', fontWeight: 700 }}>Pending: {stats.pendingPayments}</span>
+                <span style={{ color: '#4ADE80', fontWeight: 700 }}>Approved: {safeStats.confirmedRegistrations || 0}</span>
+                <span style={{ color: '#FB923C', fontWeight: 700 }}>Pending: {safeStats.pendingPayments || 0}</span>
               </div>
             </div>
             <div style={{ background: 'rgba(56, 189, 248, 0.15)', padding: '12px', borderRadius: '50%', color: '#38BDF8' }}>
@@ -518,10 +523,10 @@ const AdminControlCenter = () => {
                 REMAINING SPOTS
               </span>
               <div style={{ fontSize: '2.4rem', fontWeight: 900, color: '#FFFFFF', marginTop: '6px' }}>
-                {stats.remainingSeats} <span style={{ fontSize: '1.2rem', color: '#64748B', fontWeight: 700 }}>/ {stats.capacity}</span>
+                {safeStats.remainingSeats !== undefined ? safeStats.remainingSeats : 200} <span style={{ fontSize: '1.2rem', color: '#64748B', fontWeight: 700 }}>/ {safeStats.capacity || 200}</span>
               </div>
               <div style={{ fontSize: '0.8rem', color: '#94A3B8', fontWeight: 600, marginTop: '6px' }}>
-                Cap: {stats.capacity} Participants
+                Cap: {safeStats.capacity || 200} Participants
               </div>
             </div>
             <div style={{ background: 'rgba(56, 189, 248, 0.15)', padding: '12px', borderRadius: '50%', color: '#38BDF8' }}>
@@ -536,10 +541,10 @@ const AdminControlCenter = () => {
                 TOTAL FEE REVENUE
               </span>
               <div style={{ fontSize: '2.4rem', fontWeight: 900, color: '#4ADE80', marginTop: '6px' }}>
-                ₹{stats.totalRevenue.toLocaleString()}
+                ₹{(safeStats.totalRevenue || 0).toLocaleString()}
               </div>
               <div style={{ fontSize: '0.8rem', color: '#94A3B8', fontWeight: 600, marginTop: '6px' }}>
-                Verified Payments @ ₹300/student
+                Verified Payments @ ₹250/student
               </div>
             </div>
             <div style={{ background: 'rgba(34, 197, 94, 0.15)', padding: '12px', borderRadius: '50%', color: '#4ADE80' }}>
@@ -554,7 +559,7 @@ const AdminControlCenter = () => {
                 TODAY'S SUBMISSIONS
               </span>
               <div style={{ fontSize: '2.4rem', fontWeight: 900, color: '#38BDF8', marginTop: '6px' }}>
-                +{stats.todaySubmissions}
+                +{(safeStats.todaySubmissions || 0)}
               </div>
               <div style={{ fontSize: '0.8rem', color: '#94A3B8', fontWeight: 600, marginTop: '6px' }}>
                 Live submission rate
@@ -573,7 +578,7 @@ const AdminControlCenter = () => {
         <div style={{ background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '24px', padding: '24px 28px', marginBottom: '28px', boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
             <h3 style={{ fontSize: '1.2rem', fontWeight: 900, color: '#FFFFFF', margin: 0, textTransform: 'uppercase', letterSpacing: '-0.01em' }}>
-              STUDENT REGISTRATION RECORDS <span style={{ color: '#94A3B8', fontSize: '0.9rem', fontWeight: 600 }}>({registrations.length} Total)</span>
+              STUDENT REGISTRATION RECORDS <span style={{ color: '#94A3B8', fontSize: '0.9rem', fontWeight: 600 }}>({safeRegistrations.length} Total)</span>
             </h3>
           </div>
 
@@ -658,14 +663,14 @@ const AdminControlCenter = () => {
                     Loading participant records...
                   </td>
                 </tr>
-              ) : registrations.length === 0 ? (
+              ) : safeRegistrations.length === 0 ? (
                 <tr>
                   <td colSpan={9} style={{ textAlign: 'center', padding: '40px', color: '#94A3B8' }}>
                     No student registrations found.
                   </td>
                 </tr>
               ) : (
-                registrations.map((reg, index) => {
+                safeRegistrations.map((reg, index) => {
                   const rawProof = reg.payment?.upiScreenshotUrl || reg.payment?.screenshotUrl || reg.upiScreenshotUrl || reg.screenshotUrl || '';
                   const isVerified = reg.status === 'PAYMENT_VERIFIED' || reg.paymentStatus === 'VERIFIED';
                   const isRejected = reg.status === 'REJECTED' || reg.paymentStatus === 'REJECTED';
