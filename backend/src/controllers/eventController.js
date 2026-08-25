@@ -17,6 +17,10 @@ const getEventDetails = async (req, res) => {
         registrationFee: parseInt(process.env.REGISTRATION_FEE || '300'),
         registrationOpen: true,
         paymentUPI: process.env.PAYMENT_UPI_ID || 'ieee.kare@upi',
+        paymentQR: '/assets/payment-qr.png',
+        paymentQRActive: true,
+        paymentQRUpdatedAt: new Date(),
+        whatsappGroupLink: 'https://chat.whatsapp.com/ieee-edu-society-workshop',
         organizer: 'KARE IEEE Education Society'
       };
     }

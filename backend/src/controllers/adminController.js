@@ -106,7 +106,10 @@ const updateEventConfig = async (req, res) => {
       registrationStart,
       registrationEnd,
       registrationOpen,
-      description
+      description,
+      paymentQR,
+      paymentQRActive,
+      whatsappGroupLink
     } = req.body;
 
     let event = await Event.findOne();
@@ -117,8 +120,12 @@ const updateEventConfig = async (req, res) => {
         venue: venue || 'IEEE Tech Hall, KARE Campus',
         date: date || '2026-09-15',
         capacity: capacity || 200,
-        registrationFee: registrationFee || 250,
+        registrationFee: registrationFee || 300,
         paymentUPI: paymentUPI || 'ieee.kare@upi',
+        paymentQR: paymentQR || '/assets/payment-qr.png',
+        paymentQRActive: paymentQRActive !== undefined ? paymentQRActive : true,
+        paymentQRUpdatedAt: Date.now(),
+        whatsappGroupLink: whatsappGroupLink || 'https://chat.whatsapp.com/ieee-edu-society-workshop',
         registrationStart: registrationStart || '2026-08-01T00:00:00.000Z',
         registrationEnd: registrationEnd || '2026-08-28T23:59:59.000Z',
         registrationOpen: registrationOpen !== undefined ? registrationOpen : true
@@ -130,6 +137,12 @@ const updateEventConfig = async (req, res) => {
       if (capacity !== undefined) event.capacity = capacity;
       if (registrationFee !== undefined) event.registrationFee = registrationFee;
       if (paymentUPI !== undefined) event.paymentUPI = paymentUPI;
+      if (paymentQR !== undefined) {
+        event.paymentQR = paymentQR;
+        event.paymentQRUpdatedAt = Date.now();
+      }
+      if (paymentQRActive !== undefined) event.paymentQRActive = paymentQRActive;
+      if (whatsappGroupLink !== undefined) event.whatsappGroupLink = whatsappGroupLink;
       if (registrationStart !== undefined) event.registrationStart = registrationStart;
       if (registrationEnd !== undefined) {
         event.registrationEnd = registrationEnd;

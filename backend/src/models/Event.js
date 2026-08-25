@@ -63,6 +63,18 @@ const eventSchema = new mongoose.Schema(
       type: String,
       default: '/assets/payment-qr.png'
     },
+    paymentQRActive: {
+      type: Boolean,
+      default: true
+    },
+    paymentQRUpdatedAt: {
+      type: Date,
+      default: Date.now
+    },
+    whatsappGroupLink: {
+      type: String,
+      default: 'https://chat.whatsapp.com/ieee-edu-society-workshop'
+    },
     organizer: {
       type: String,
       default: 'KARE IEEE Education Society'

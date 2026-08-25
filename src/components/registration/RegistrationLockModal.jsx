@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { lockSeat, confirmPayment, submitPayment } from '../../services/api';
+import { lockSeat, confirmPayment, submitPayment, getEventDetails } from '../../services/api';
 import { X, Clock, ShieldCheck, AlertCircle, ArrowRight, CheckCircle2, Lock, QrCode, CreditCard, Upload } from 'lucide-react';
+import PaymentSubmittedPage from './PaymentSubmittedPage';
 
 const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
   const { user, refreshRegistration } = useAuth();
 
-  const [step, setStep] = useState(1); // 1: Student Details & Lock, 2: Payment
+  const [step, setStep] = useState(1); // 1: Student Details, 2: Payment, 3: Confirmation
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [eventDetails, setEventDetails] = useState(null);
+  const [submittedRecord, setSubmittedRecord] = useState(null);
+  const [submittedPayment, setSubmittedPayment] = useState(null);
   const [lockExpiresAt, setLockExpiresAt] = useState(null);
   const [lockTimeLeft, setLockTimeLeft] = useState({ minutes: 10, seconds: 0 });
 
@@ -67,6 +71,13 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
     setLoading(true);
     setError('');
     try {
+      try {
+        const evtRes = await getEventDetails();
+        if (evtRes.data.success) setEventDetails(evtRes.data.event);
+      } catch (evtErr) {
+        console.warn('[EventDetails Fetch Warning]', evtErr);
+      }
+
       const res = await lockSeat({
         fullName: formData.fullName || user.displayName || user.name,
         photoURL: user.photoURL
@@ -168,8 +179,9 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
         }
 
         await refreshRegistration();
-        onSuccess(registrationRecord);
-        onClose();
+        setSubmittedRecord(registrationRecord);
+        setSubmittedPayment({ transactionId: utr, amount: 300 });
+        setStep(3);
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Payment confirmation failed. Please check inputs.');
@@ -248,7 +260,18 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
           </div>
         )}
 
-        {step === 1 ? (
+        {step === 3 ? (
+          <PaymentSubmittedPage
+            registration={submittedRecord}
+            payment={submittedPayment}
+            eventDetails={eventDetails}
+            onViewToken={() => {
+              onSuccess(submittedRecord);
+              onClose();
+            }}
+            onClose={onClose}
+          />
+        ) : step === 1 ? (
           <form onSubmit={handleNextToPayment}>
             <div className="form-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
               <div className="form-group">
@@ -374,9 +397,32 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
                 <ShieldCheck size={16} /> Seat Locked & Guaranteed for 10 Minutes
               </div>
 
-              <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', textAlign: 'left', fontSize: '0.85rem' }}>
-                <p style={{ color: '#CBD5E1', marginBottom: '8px' }}>
-                  Pay via UPI ID: <strong style={{ color: '#F97316' }}>ieee.kare@upi</strong> or scan QR code.
+              <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', textAlign: 'center', fontSize: '0.85rem' }}>
+                <p style={{ color: '#CBD5E1', marginBottom: '12px' }}>
+                  Pay via UPI ID: <strong style={{ color: '#F97316' }}>{eventDetails?.paymentUPI || 'ieee.kare@upi'}</strong> or scan QR code below.
+                </p>
+
+                {/* Admin Controlled Payment QR Code */}
+                {eventDetails?.paymentQRActive !== false && (
+                  <div style={{
+                    background: '#FFFFFF',
+                    padding: '12px',
+                    borderRadius: '16px',
+                    display: 'inline-block',
+                    boxShadow: '0 8px 25px rgba(0,0,0,0.4)',
+                    maxWidth: '210px',
+                    width: '100%',
+                    margin: '0 auto 8px auto'
+                  }}>
+                    <img
+                      src={eventDetails?.paymentQR || '/assets/payment-qr.png'}
+                      alt="UPI Payment QR Code"
+                      style={{ width: '100%', height: 'auto', display: 'block', borderRadius: '8px' }}
+                    />
+                  </div>
+                )}
+                <p style={{ color: '#94A3B8', fontSize: '0.78rem', margin: 0 }}>
+                  Scan using Google Pay, PhonePe, Paytm or any UPI App
                 </p>
               </div>
             </div>

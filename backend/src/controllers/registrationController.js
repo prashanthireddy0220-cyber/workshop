@@ -32,6 +32,20 @@ const ensureTicketForRegistration = async (registration) => {
     console.error('[Ticket QR Auto-Generation Error]', err);
     return null;
   }
+const generateSequentialRegistrationId = async () => {
+  const registrations = await Registration.find({}, { registrationId: 1 }).lean();
+  let maxNum = 0;
+  for (const reg of registrations) {
+    if (reg.registrationId) {
+      const match = reg.registrationId.match(/(\d+)$/);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num > maxNum) maxNum = num;
+      }
+    }
+  }
+  const nextSeq = (maxNum + 1).toString().padStart(3, '0');
+  return `EDS-WS-${nextSeq}`;
 };
 
 const createRegistration = async (req, res) => {
@@ -65,9 +79,8 @@ const createRegistration = async (req, res) => {
 
     const eventId = event ? event._id : null;
 
-    // Generate unique Registration ID: KLU-ML-2026-0001
-    const nextSeq = (registeredCount + 1).toString().padStart(4, '0');
-    const registrationId = `KLU-ML-2026-${nextSeq}`;
+    // Generate unique Registration ID: EDS-WS-001
+    const registrationId = await generateSequentialRegistrationId();
 
     const {
       fullName,
@@ -251,8 +264,7 @@ const lockSeat = async (req, res) => {
     }
 
     // 5. Create new lock
-    const nextSeq = (confirmedCount + activeLockedCount + 1).toString().padStart(4, '0');
-    const registrationId = `REG-KLU-${Date.now().toString().slice(-4)}-${nextSeq}`;
+    const registrationId = await generateSequentialRegistrationId();
     const lockDuration = 10 * 60 * 1000; // 10 minutes
     const lockExpiresAt = new Date(now.getTime() + lockDuration);
 

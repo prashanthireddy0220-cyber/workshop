@@ -15,6 +15,7 @@ import AdminPortal from './components/admin/AdminPortal';
 import PageLoader from './components/PageLoader';
 
 import RegistrationSection from './components/registration/RegistrationSection';
+import TokenPassPage from './components/registration/TokenPassPage';
 
 const AppContent = () => {
   const { user, registrationState, loading: authLoading } = useAuth();
@@ -22,24 +23,25 @@ const AppContent = () => {
   // Page Transition Loading state
   const [pageLoading, setPageLoading] = useState(true);
 
-  // Check URL pathname to determine if on restricted /admin route
+  // Check URL pathname to determine if on restricted /admin or /registration/token route
   const isAdminRoute = window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin');
+  const isTokenRoute = window.location.pathname.startsWith('/registration/token') || window.location.pathname.startsWith('/token');
   const isMyRegistrationsRoute = window.location.pathname.startsWith('/my-registrations') || window.location.pathname.startsWith('/registration');
 
-  // Initial site load transition
+  // Initial site load transition - 2.5 second splash screen display
   useEffect(() => {
     const timer = setTimeout(() => {
       setPageLoading(false);
-      if (isMyRegistrationsRoute) {
+      if (isMyRegistrationsRoute && !isTokenRoute) {
         if (user) {
           setDashboardOpen(true);
         } else {
           setAuthModalOpen(true);
         }
       }
-    }, 800);
+    }, 2500);
     return () => clearTimeout(timer);
-  }, [user, isMyRegistrationsRoute]);
+  }, [user, isMyRegistrationsRoute, isTokenRoute]);
 
   // Modal visibility states for public student view
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -97,6 +99,20 @@ const AppContent = () => {
       setDashboardOpen(true);
     });
   };
+
+  // If visiting /registration/token/:registrationId -> Render Standalone Token Pass Page
+  if (isTokenRoute) {
+    const parts = window.location.pathname.split('/');
+    const pathId = parts[parts.length - 1] !== 'token' ? parts[parts.length - 1] : '';
+    const tokenRegId = pathId || registrationState?.registration?.registrationId || 'EDS-WS-001';
+
+    return (
+      <div className="app-container" style={{ minHeight: '100vh', background: '#070D1B', padding: '30px 16px' }}>
+        <PageLoader isLoading={pageLoading || authLoading} />
+        <TokenPassPage registrationId={tokenRegId} onClose={() => window.location.href = '/'} />
+      </div>
+    );
+  }
 
   // If visiting http://localhost:5173/admin -> Render Standalone Restricted Admin Portal
   if (isAdminRoute) {

@@ -153,6 +153,8 @@ const RegistrationSection = ({ onOpenDashboard }) => {
           <div style={{ marginBottom: '40px' }}>
             <RegistrationSuccessCard
               registration={registrationState.registration}
+              eventDetails={eventStatus}
+              onOpenToken={() => window.location.href = `/registration/token/${registrationState.registration.registrationId}`}
               onOpenDashboard={onOpenDashboard}
             />
           </div>
