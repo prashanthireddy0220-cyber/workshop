@@ -4,8 +4,8 @@ import { Shield, Lock, User, Eye, EyeOff, ShieldAlert, ArrowLeft, KeyRound, Chec
 
 const AdminLoginPage = () => {
   const { handleAdminLogin } = useAuth();
-  const [username, setUsername] = useState('Workshop');
-  const [password, setPassword] = useState('IEEE@123');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
