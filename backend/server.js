@@ -12,14 +12,21 @@ dotenv.config();
 
 const app = express();
 
+// Trust reverse proxy headers (required for Render, Vercel, Heroku for express-rate-limit)
+app.set('trust proxy', 1);
+
 // Connect Database
 connectDB();
 
 // Middleware to check Database Readiness
 app.use(async (req, res, next) => {
-  if (req.path.startsWith('/api') && req.path !== '/api/health') {
+  if (req.path !== '/api/health' && req.path !== '/health') {
     if (mongoose.connection.readyState !== 1) {
-      connectDB();
+      try {
+        await connectDB();
+      } catch (err) {
+        // Ignored here; handled by readyState check below
+      }
       if (mongoose.connection.readyState !== 1) {
         return res.status(503).json({
           success: false,
@@ -65,7 +72,8 @@ app.use(
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 300, // Limit each IP to 300 requests per windowMs
-  message: { success: false, message: 'Too many requests, please try again later.' }
+  message: { success: false, message: 'Too many requests, please try again later.' },
+  validate: { xForwardedForHeader: false }
 });
 app.use('/api', limiter);
 
