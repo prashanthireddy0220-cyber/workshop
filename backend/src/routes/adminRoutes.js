@@ -23,7 +23,12 @@ const {
   deleteAllRegistrations,
   bulkApprovePayments,
   directRegistrationAdmin,
-  updatePaymentProofAdmin
+  updatePaymentProofAdmin,
+  updateRegistrationSettings,
+  updateAttendanceSettings,
+  getAttendanceTeam,
+  addAttendanceTeamMember,
+  removeAttendanceTeamMember
 } = require('../controllers/adminController');
 const { protect } = require('../middleware/authMiddleware');
 const { adminOnly } = require('../middleware/adminMiddleware');
@@ -46,8 +51,15 @@ router.put('/payments/:id/approve', approvePayment);
 router.put('/payments/:id/reject', rejectPayment);
 router.post('/payments/:id/proof', uploadPaymentScreenshot.single('screenshot'), updatePaymentProofAdmin);
 
-// Event & Config
+// Event & Config / Settings
 router.put('/event/config', updateEventConfig);
+router.put('/registration-settings', updateRegistrationSettings);
+router.put('/attendance-settings', updateAttendanceSettings);
+
+// Attendance Team Management
+router.get('/attendance-team', getAttendanceTeam);
+router.post('/attendance-team', addAttendanceTeamMember);
+router.delete('/attendance-team/:id', removeAttendanceTeamMember);
 
 // Workshops CRUD
 router.get('/workshops', getWorkshops);

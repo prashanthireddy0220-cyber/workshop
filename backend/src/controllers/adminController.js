@@ -781,6 +781,139 @@ const updatePaymentProofAdmin = async (req, res) => {
   }
 };
 
+// Attendance & Registration Settings APIs
+const updateRegistrationSettings = async (req, res) => {
+  try {
+    const { registrationOpen, registrationLimit } = req.body;
+    let event = await Event.findOne();
+    if (!event) {
+      event = await Event.create({
+        eventName: 'Intelligent Yield Prediction & AI/ML Workshop',
+        description: 'IEEE Education Society Workshop 2026',
+        date: '2026-09-15',
+        venue: 'IEEE Tech Hall, KARE Campus',
+        capacity: 200,
+        registrationFee: 250
+      });
+    }
+
+    if (registrationOpen !== undefined) event.registrationOpen = Boolean(registrationOpen);
+    if (registrationLimit !== undefined) {
+      event.registrationLimit = parseInt(registrationLimit, 10);
+      event.capacity = parseInt(registrationLimit, 10);
+    }
+
+    await event.save();
+    return res.status(200).json({
+      success: true,
+      message: 'Registration settings updated successfully!',
+      event
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const updateAttendanceSettings = async (req, res) => {
+  try {
+    const { attendanceOpen, attendanceLimit } = req.body;
+    let event = await Event.findOne();
+    if (!event) {
+      event = await Event.create({
+        eventName: 'Intelligent Yield Prediction & AI/ML Workshop',
+        description: 'IEEE Education Society Workshop 2026',
+        date: '2026-09-15',
+        venue: 'IEEE Tech Hall, KARE Campus',
+        capacity: 200,
+        registrationFee: 250
+      });
+    }
+
+    if (attendanceOpen !== undefined) event.attendanceOpen = Boolean(attendanceOpen);
+    if (attendanceLimit !== undefined) event.attendanceLimit = parseInt(attendanceLimit, 10);
+
+    await event.save();
+    return res.status(200).json({
+      success: true,
+      message: 'Attendance settings updated successfully!',
+      event
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Attendance Team Management APIs
+const getAttendanceTeam = async (req, res) => {
+  try {
+    const teamMembers = await User.find({ role: 'attendance_team' }).select('-password').lean();
+    return res.status(200).json({
+      success: true,
+      count: teamMembers.length,
+      teamMembers
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const addAttendanceTeamMember = async (req, res) => {
+  try {
+    const { email, name } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Email address is required' });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+    let user = await User.findOne({ email: cleanEmail });
+
+    if (user) {
+      user.role = 'attendance_team';
+      if (name) user.name = name;
+      await user.save();
+    } else {
+      user = await User.create({
+        email: cleanEmail,
+        name: name || cleanEmail.split('@')[0],
+        role: 'attendance_team'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `User ${user.email} added to Attendance Team successfully!`,
+      user
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const removeAttendanceTeamMember = async (req, res) => {
+  try {
+    const { id } = req.params;
+    let user = await User.findById(id).catch(() => null);
+    if (!user) {
+      user = await User.findOne({ email: id.toLowerCase().trim() });
+    }
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Team member record not found' });
+    }
+
+    user.role = 'participant';
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: `User ${user.email} removed from Attendance Team!`,
+      user
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   getDashboardStats,
   getRegistrationsList,
@@ -804,5 +937,10 @@ module.exports = {
   deleteAllRegistrations,
   bulkApprovePayments,
   directRegistrationAdmin,
-  updatePaymentProofAdmin
+  updatePaymentProofAdmin,
+  updateRegistrationSettings,
+  updateAttendanceSettings,
+  getAttendanceTeam,
+  addAttendanceTeamMember,
+  removeAttendanceTeamMember
 };

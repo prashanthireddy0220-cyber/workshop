@@ -34,12 +34,24 @@ const eventSchema = new mongoose.Schema(
       required: true,
       default: 200
     },
+    registrationLimit: {
+      type: Number,
+      default: 200
+    },
+    attendanceLimit: {
+      type: Number,
+      default: 200
+    },
     registrationFee: {
       type: Number,
       required: true,
       default: 250
     },
     registrationOpen: {
+      type: Boolean,
+      default: true
+    },
+    attendanceOpen: {
       type: Boolean,
       default: true
     },

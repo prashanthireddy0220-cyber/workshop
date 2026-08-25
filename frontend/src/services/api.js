@@ -102,6 +102,16 @@ export const getTicketDownloadUrl = (registrationId) => `${API_BASE}/tickets/${r
 
 // Attendance Services
 export const checkInParticipant = (token) => api.post('/attendance/check-in', { token });
+export const scanAttendanceApi = (token) => api.post('/attendance/scan', { token });
+export const getAttendanceStatusApi = () => api.get('/attendance/status');
+export const getAttendanceStatsApi = () => api.get('/attendance/stats');
+
+// Admin Settings & Attendance Team API
+export const updateRegistrationSettingsApi = (settings) => api.put('/admin/registration-settings', settings);
+export const updateAttendanceSettingsApi = (settings) => api.put('/admin/attendance-settings', settings);
+export const getAttendanceTeamApi = () => api.get('/admin/attendance-team');
+export const addAttendanceTeamMemberApi = (data) => api.post('/admin/attendance-team', data);
+export const removeAttendanceTeamMemberApi = (id) => api.delete(`/admin/attendance-team/${id}`);
 
 // Certificate Services
 export const getCertificateInfo = (registrationId) => api.get(`/certificates/${registrationId}`);

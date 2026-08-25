@@ -10,29 +10,54 @@ const attendanceSchema = new mongoose.Schema(
     },
     ticketId: {
       type: String,
-      required: true
+      default: ''
     },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true
+      ref: 'User'
     },
     eventId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Event'
     },
     workshopId: {
-      type: String
+      type: String,
+      default: 'IEEE-WS-2026'
     },
     checkedIn: {
       type: Boolean,
       default: true
     },
+    status: {
+      type: String,
+      enum: ['PRESENT', 'ABSENT'],
+      default: 'PRESENT'
+    },
+    participantName: {
+      type: String,
+      default: ''
+    },
+    participantEmail: {
+      type: String,
+      default: ''
+    },
+    department: {
+      type: String,
+      default: ''
+    },
     checkedInAt: {
       type: Date,
       default: Date.now
     },
+    scannedAt: {
+      type: Date,
+      default: Date.now
+    },
     checkedInBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    scannedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'
     }

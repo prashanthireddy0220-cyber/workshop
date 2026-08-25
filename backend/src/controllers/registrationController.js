@@ -198,22 +198,31 @@ const lockSeat = async (req, res) => {
       });
     }
 
-    // 2. Fetch Event details
+    // 2. Fetch Event details & Enforce Limits
     let event = await Event.findOne();
     const capacity = event ? event.capacity : parseInt(process.env.EVENT_CAPACITY || '200');
+    const registrationLimit = event?.registrationLimit !== undefined ? event.registrationLimit : capacity;
+    const registrationOpen = event ? (event.registrationOpen !== false) : true;
     const registrationEnd = event?.registrationEnd || event?.registrationDeadline || '2026-08-28T23:59:59.000Z';
-    const registrationOpen = event ? event.registrationOpen : true;
 
     const now = new Date();
     if (now > new Date(registrationEnd) || !registrationOpen) {
       return res.status(400).json({
         success: false,
-        message: 'Registration has closed for this event.'
+        message: 'Registration is currently closed.'
       });
     }
 
-    // 3. Check if user already registered or has active lock
+    // Check Total Registrations vs Limit
+    const currentRegCount = await Registration.countDocuments({ seatStatus: { $in: ['LOCKED', 'CONFIRMED'] } });
     let existingReg = await Registration.findOne({ $or: [{ userId }, { email: userEmail }] });
+
+    if (currentRegCount >= registrationLimit && !existingReg) {
+      return res.status(400).json({
+        success: false,
+        message: 'Registration limit reached. Registration is closed.'
+      });
+    }
     
     if (existingReg) {
       if (existingReg.seatStatus === 'CONFIRMED' || existingReg.paymentStatus === 'PAID' || existingReg.paymentStatus === 'VERIFIED') {

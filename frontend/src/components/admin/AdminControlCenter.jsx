@@ -10,7 +10,12 @@ import {
   deleteRegistrationAdmin,
   deleteAllRegistrationsAdmin,
   directRegisterAdmin,
-  markAdminAttendance
+  markAdminAttendance,
+  updateRegistrationSettingsApi,
+  updateAttendanceSettingsApi,
+  getAttendanceTeamApi,
+  addAttendanceTeamMemberApi,
+  removeAttendanceTeamMemberApi
 } from '../../services/api';
 import PaymentApprovalModal from './PaymentApprovalModal';
 import QRScannerModal from './QRScannerModal';
@@ -104,6 +109,106 @@ const AdminControlCenter = () => {
   });
   const [directFormLoading, setDirectFormLoading] = useState(false);
   const [directFormError, setDirectFormError] = useState('');
+
+  // Attendance & Registration Control Settings State
+  const [registrationLimitInput, setRegistrationLimitInput] = useState(200);
+  const [registrationOpenState, setRegistrationOpenState] = useState(true);
+  const [attendanceLimitInput, setAttendanceLimitInput] = useState(200);
+  const [attendanceOpenState, setAttendanceOpenState] = useState(true);
+  const [attendanceTeam, setAttendanceTeam] = useState([]);
+  const [teamEmailInput, setTeamEmailInput] = useState('');
+  const [teamNameInput, setTeamNameInput] = useState('');
+  const [settingsMsg, setSettingsMsg] = useState('');
+
+  const fetchTeamAndSettings = async () => {
+    try {
+      const [teamRes, dashboardRes] = await Promise.all([
+        getAttendanceTeamApi().catch(() => ({ data: {} })),
+        getAdminDashboard().catch(() => ({ data: {} }))
+      ]);
+
+      if (teamRes.data?.success) {
+        setAttendanceTeam(teamRes.data.teamMembers || []);
+      }
+
+      if (dashboardRes.data?.success && dashboardRes.data.stats) {
+        const st = dashboardRes.data.stats;
+        setRegistrationLimitInput(st.registrationLimit !== undefined ? st.registrationLimit : st.capacity || 200);
+        setRegistrationOpenState(st.registrationOpen !== false);
+        setAttendanceLimitInput(st.attendanceLimit !== undefined ? st.attendanceLimit : st.capacity || 200);
+        setAttendanceOpenState(st.attendanceOpen !== false);
+      }
+    } catch (err) {
+      console.warn('[Fetch Team Error]', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchTeamAndSettings();
+  }, []);
+
+  const handleSaveRegistrationSettings = async () => {
+    try {
+      setSettingsMsg('');
+      const res = await updateRegistrationSettingsApi({
+        registrationOpen: registrationOpenState,
+        registrationLimit: parseInt(registrationLimitInput, 10)
+      });
+      if (res.data.success) {
+        setSettingsMsg('✓ Registration settings saved successfully!');
+        fetchAllData();
+      }
+    } catch (err) {
+      setSettingsMsg('✗ Failed to save registration settings: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleSaveAttendanceSettings = async () => {
+    try {
+      setSettingsMsg('');
+      const res = await updateAttendanceSettingsApi({
+        attendanceOpen: attendanceOpenState,
+        attendanceLimit: parseInt(attendanceLimitInput, 10)
+      });
+      if (res.data.success) {
+        setSettingsMsg('✓ Attendance settings saved successfully!');
+        fetchAllData();
+      }
+    } catch (err) {
+      setSettingsMsg('✗ Failed to save attendance settings: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleAddTeamMember = async (e) => {
+    e.preventDefault();
+    if (!teamEmailInput.trim()) return;
+    try {
+      const res = await addAttendanceTeamMemberApi({
+        email: teamEmailInput.trim(),
+        name: teamNameInput.trim()
+      });
+      if (res.data.success) {
+        setTeamEmailInput('');
+        setTeamNameInput('');
+        fetchTeamAndSettings();
+        setSettingsMsg('✓ Team member added successfully!');
+      }
+    } catch (err) {
+      setSettingsMsg('✗ Failed to add team member: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleRemoveTeamMember = async (memberId) => {
+    try {
+      const res = await removeAttendanceTeamMemberApi(memberId);
+      if (res.data.success) {
+        fetchTeamAndSettings();
+        setSettingsMsg('✓ Team member removed successfully!');
+      }
+    } catch (err) {
+      setSettingsMsg('✗ Failed to remove team member: ' + (err.response?.data?.message || err.message));
+    }
+  };
 
   const fetchAllData = async () => {
     setLoading(true);
@@ -569,6 +674,226 @@ const AdminControlCenter = () => {
             <div style={{ background: 'rgba(56, 189, 248, 0.15)', padding: '12px', borderRadius: '50%', color: '#38BDF8' }}>
               <TrendingUp size={22} />
             </div>
+          </div>
+
+        </div>
+
+        {/* Feedback / Toast message for settings updates */}
+        {settingsMsg && (
+          <div style={{
+            background: settingsMsg.startsWith('✓') ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+            border: settingsMsg.startsWith('✓') ? '1px solid rgba(34, 197, 94, 0.4)' : '1px solid rgba(239, 68, 68, 0.4)',
+            color: settingsMsg.startsWith('✓') ? '#4ADE80' : '#F87171',
+            borderRadius: '16px',
+            padding: '14px 20px',
+            marginBottom: '28px',
+            fontWeight: 800,
+            fontSize: '0.9rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}>
+            <span>{settingsMsg}</span>
+            <button onClick={() => setSettingsMsg('')} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontWeight: 900 }}>✕</button>
+          </div>
+        )}
+
+        {/* ==========================================================================
+           REGISTRATION, ATTENDANCE & TEAM MANAGEMENT CONTROL CENTER
+           ========================================================================== */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '28px' }}>
+
+          {/* 1. REGISTRATION SETTINGS CARD */}
+          <div style={{ background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '24px', padding: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#FFFFFF', margin: '0 0 16px 0', textTransform: 'uppercase', letterSpacing: '0.02em', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Settings size={18} color="#F97316" /> Registration Settings
+            </h3>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#94A3B8' }}>Registration Status:</span>
+                <button
+                  type="button"
+                  onClick={() => setRegistrationOpenState(!registrationOpenState)}
+                  style={{
+                    background: registrationOpenState ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                    color: registrationOpenState ? '#4ADE80' : '#F87171',
+                    border: registrationOpenState ? '1px solid rgba(34, 197, 94, 0.4)' : '1px solid rgba(239, 68, 68, 0.4)',
+                    padding: '8px 16px',
+                    borderRadius: '9999px',
+                    fontWeight: 800,
+                    fontSize: '0.82rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  {registrationOpenState ? <Unlock size={14} /> : <Lock size={14} />}
+                  REGISTRATION: {registrationOpenState ? 'ON (OPEN)' : 'OFF (CLOSED)'}
+                </button>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#CBD5E1', marginBottom: '6px' }}>
+                  Registration Limit:
+                </label>
+                <input
+                  type="number"
+                  value={registrationLimitInput}
+                  onChange={(e) => setRegistrationLimitInput(e.target.value)}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.9rem', fontWeight: 700 }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', background: 'rgba(255, 255, 255, 0.03)', padding: '12px 16px', borderRadius: '12px', fontSize: '0.85rem' }}>
+                <div>
+                  <span style={{ color: '#94A3B8' }}>Current Registrations: </span>
+                  <strong style={{ color: '#FFF' }}>{safeStats.totalRegistrations || 0}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#94A3B8' }}>Remaining: </span>
+                  <strong style={{ color: '#4ADE80' }}>{Math.max(0, registrationLimitInput - (safeStats.totalRegistrations || 0))}</strong>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleSaveRegistrationSettings}
+                style={{ background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)', color: '#FFF', border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 800, fontSize: '0.88rem', cursor: 'pointer', textAlign: 'center' }}
+              >
+                Save Registration Settings
+              </button>
+            </div>
+          </div>
+
+          {/* 2. ATTENDANCE SETTINGS CARD */}
+          <div style={{ background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '24px', padding: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#FFFFFF', margin: '0 0 16px 0', textTransform: 'uppercase', letterSpacing: '0.02em', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <QrCode size={18} color="#38BDF8" /> Attendance Settings
+            </h3>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#94A3B8' }}>Attendance Status:</span>
+                <button
+                  type="button"
+                  onClick={() => setAttendanceOpenState(!attendanceOpenState)}
+                  style={{
+                    background: attendanceOpenState ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                    color: attendanceOpenState ? '#4ADE80' : '#F87171',
+                    border: attendanceOpenState ? '1px solid rgba(34, 197, 94, 0.4)' : '1px solid rgba(239, 68, 68, 0.4)',
+                    padding: '8px 16px',
+                    borderRadius: '9999px',
+                    fontWeight: 800,
+                    fontSize: '0.82rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  {attendanceOpenState ? <Unlock size={14} /> : <Lock size={14} />}
+                  ATTENDANCE: {attendanceOpenState ? 'ON (ACTIVE)' : 'OFF (CLOSED)'}
+                </button>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#CBD5E1', marginBottom: '6px' }}>
+                  Attendance Limit:
+                </label>
+                <input
+                  type="number"
+                  value={attendanceLimitInput}
+                  onChange={(e) => setAttendanceLimitInput(e.target.value)}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.9rem', fontWeight: 700 }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', background: 'rgba(255, 255, 255, 0.03)', padding: '12px 16px', borderRadius: '12px', fontSize: '0.85rem' }}>
+                <div>
+                  <span style={{ color: '#94A3B8' }}>Current Attendance: </span>
+                  <strong style={{ color: '#38BDF8' }}>{safeStats.totalAttendance || 0}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#94A3B8' }}>Remaining: </span>
+                  <strong style={{ color: '#4ADE80' }}>{Math.max(0, attendanceLimitInput - (safeStats.totalAttendance || 0))}</strong>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleSaveAttendanceSettings}
+                style={{ background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)', color: '#FFF', border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 800, fontSize: '0.88rem', cursor: 'pointer', textAlign: 'center' }}
+              >
+                Save Attendance Settings
+              </button>
+            </div>
+          </div>
+
+          {/* 3. ATTENDANCE TEAM MANAGEMENT CARD */}
+          <div style={{ background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '24px', padding: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#FFFFFF', margin: '0 0 16px 0', textTransform: 'uppercase', letterSpacing: '0.02em', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <UserCheck size={18} color="#4ADE80" /> Attendance Team Management
+            </h3>
+
+            {/* List of Authorized Members */}
+            <div style={{ marginBottom: '16px', maxHeight: '160px', overflowY: 'auto' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Authorized Team Members ({attendanceTeam.length})
+              </span>
+              {attendanceTeam.length === 0 ? (
+                <p style={{ color: '#64748B', fontSize: '0.82rem', marginTop: '6px' }}>No team members assigned yet. Add one below.</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
+                  {attendanceTeam.map((member) => (
+                    <div key={member._id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255, 255, 255, 0.03)', padding: '8px 12px', borderRadius: '10px', fontSize: '0.82rem' }}>
+                      <div>
+                        <strong style={{ color: '#FFF' }}>{member.name || member.email}</strong>
+                        <div style={{ fontSize: '0.72rem', color: '#94A3B8' }}>{member.email}</div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ADE80', fontSize: '0.7rem', fontWeight: 800, padding: '2px 8px', borderRadius: '12px' }}>
+                          ACTIVE
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTeamMember(member._id)}
+                          style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#F87171', border: 'none', padding: '4px 8px', borderRadius: '8px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Add Team Member Form */}
+            <form onSubmit={handleAddTeamMember} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <input
+                type="email"
+                placeholder="Team Member KLU Email (@klu.ac.in)"
+                value={teamEmailInput}
+                onChange={(e) => setTeamEmailInput(e.target.value)}
+                required
+                style={{ padding: '8px 12px', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.85rem' }}
+              />
+              <input
+                type="text"
+                placeholder="Member Name (Optional)"
+                value={teamNameInput}
+                onChange={(e) => setTeamNameInput(e.target.value)}
+                style={{ padding: '8px 12px', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.85rem' }}
+              />
+              <button
+                type="submit"
+                style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ADE80', border: '1px solid rgba(34, 197, 94, 0.4)', padding: '10px', borderRadius: '10px', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer' }}
+              >
+                + Add Attendance Team Member
+              </button>
+            </form>
           </div>
 
         </div>

@@ -12,6 +12,7 @@ import RegistrationModal from './components/RegistrationModal';
 import PaymentModal from './components/PaymentModal';
 import ParticipantDashboard from './components/ParticipantDashboard';
 import AdminPortal from './components/admin/AdminPortal';
+import AttendanceScannerPage from './components/attendance/AttendanceScannerPage';
 import PageLoader from './components/PageLoader';
 
 import RegistrationSection from './components/registration/RegistrationSection';
@@ -23,14 +24,15 @@ const AppContent = () => {
   // Page Transition Loading state
   const [pageLoading, setPageLoading] = useState(true);
 
-  // Check URL pathname/hash to determine if on restricted /admin or /registration/token route
+  // Check URL pathname/hash to determine route
   const isAdminRoute = window.location.pathname.includes('admin') || window.location.hash.includes('admin');
+  const isAttendanceRoute = window.location.pathname.startsWith('/attend') || window.location.hash.startsWith('#/attend');
   const isTokenRoute = window.location.pathname.startsWith('/registration/token') || window.location.pathname.startsWith('/token');
   const isMyRegistrationsRoute = window.location.pathname.startsWith('/my-registrations') || window.location.pathname.startsWith('/registration');
 
-  // Initial site load transition - 5.0 second splash screen opening for public home page
+  // Initial site load transition
   useEffect(() => {
-    if (isAdminRoute) {
+    if (isAdminRoute || isAttendanceRoute) {
       setPageLoading(false);
       return;
     }
@@ -108,6 +110,15 @@ const AppContent = () => {
       <div className="app-container" style={{ minHeight: '100vh', background: '#070D1B', padding: '30px 16px' }}>
         <PageLoader isLoading={pageLoading || authLoading} />
         <TokenPassPage registrationId={tokenRegId} onClose={() => window.location.href = '/'} />
+      </div>
+    );
+  }
+
+  // If visiting /attend -> Render Standalone Attendance Scanning Portal
+  if (isAttendanceRoute) {
+    return (
+      <div className="app-container" style={{ minHeight: '100vh', background: '#070D1B' }}>
+        <AttendanceScannerPage />
       </div>
     );
   }

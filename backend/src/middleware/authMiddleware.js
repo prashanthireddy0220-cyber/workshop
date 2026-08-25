@@ -28,4 +28,17 @@ const protect = async (req, res, next) => {
   }
 };
 
-module.exports = { protect };
+const requireRoles = (...allowedRoles) => {
+  return (req, res, next) => {
+    if (req.user && allowedRoles.includes(req.user.role)) {
+      next();
+    } else {
+      return res.status(403).json({
+        success: false,
+        message: `Access denied: Requires role (${allowedRoles.join(' or ')})`
+      });
+    }
+  };
+};
+
+module.exports = { protect, requireRoles };
