@@ -174,6 +174,12 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
       setError(`Your ${lockDurationMinutes}-minute seat lock has expired. Please start registration again.`);
       return;
     }
+
+    // MANDATORY REQUIREMENT: Payment screenshot proof must be attached
+    if (!paymentFile) {
+      setError('Please upload your UPI payment screenshot proof before completing registration.');
+      return;
+    }
     
     // Strict 12-digit UTR validation
     const utr = formData.transactionId ? formData.transactionId.trim() : '';
@@ -190,6 +196,7 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
     try {
       let registrationRecord = null;
 
+      // 1. Confirm basic registration record
       const res = await confirmPayment({
         transactionId: utr,
         paymentMethod: 'UPI'
@@ -198,26 +205,26 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
       if (res.data.success) {
         registrationRecord = res.data.registration;
         
-        if (paymentFile && registrationRecord?.registrationId) {
-          try {
-            const uploadData = new FormData();
-            uploadData.append('registrationId', registrationRecord.registrationId);
-            uploadData.append('transactionId', utr);
-            uploadData.append('amount', feeAmount);
-            uploadData.append('screenshot', paymentFile);
-            await submitPayment(uploadData);
-          } catch (uploadErr) {
-            console.warn('[Screenshot Upload Warning]', uploadErr);
-          }
-        }
+        // 2. Mandatorily upload payment screenshot proof to Cloudinary & DB
+        const uploadData = new FormData();
+        uploadData.append('registrationId', registrationRecord.registrationId);
+        uploadData.append('transactionId', utr);
+        uploadData.append('amount', feeAmount);
+        uploadData.append('screenshot', paymentFile);
 
-        await refreshRegistration();
-        setSubmittedRecord(registrationRecord);
-        setSubmittedPayment({ transactionId: utr, amount: feeAmount });
-        setStep(3);
+        const uploadRes = await submitPayment(uploadData);
+
+        if (uploadRes.data.success) {
+          await refreshRegistration();
+          setSubmittedRecord(registrationRecord);
+          setSubmittedPayment({ transactionId: utr, amount: feeAmount });
+          setStep(3); // Transition to Registration Successful ONLY after screenshot upload succeeds!
+        } else {
+          setError(uploadRes.data.message || 'Failed to upload payment screenshot proof. Please try again.');
+        }
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Payment confirmation failed. Please check inputs.');
+      setError(err.response?.data?.message || 'Payment submission failed. Please ensure screenshot is attached and UTR is valid.');
     } finally {
       setLoading(false);
     }

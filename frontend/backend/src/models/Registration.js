@@ -62,6 +62,14 @@ const registrationSchema = new mongoose.Schema(
       type: String,
       default: ''
     },
+    upiScreenshotUrl: {
+      type: String,
+      default: ''
+    },
+    screenshotUrl: {
+      type: String,
+      default: ''
+    },
     firebaseUid: {
       type: String,
       default: ''

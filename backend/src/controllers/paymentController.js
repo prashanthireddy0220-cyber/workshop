@@ -112,11 +112,14 @@ const submitPayment = async (req, res) => {
         });
       }
 
-      // Update Registration status if not already confirmed
-      if (!isAlreadyVerified) {
-        registration.status = 'PAYMENT_SUBMITTED';
-        await registration.save();
+      // Update Registration status & screenshot URL
+      registration.status = 'PAYMENT_SUBMITTED';
+      registration.paymentStatus = 'PENDING';
+      if (upiScreenshotUrl) {
+        registration.upiScreenshotUrl = upiScreenshotUrl;
+        registration.screenshotUrl = upiScreenshotUrl;
       }
+      await registration.save();
 
       return res.status(200).json({
         success: true,
