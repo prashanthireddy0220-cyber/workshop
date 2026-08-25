@@ -38,7 +38,8 @@ import {
   X,
   Sparkles,
   Camera,
-  ShieldCheck
+  ShieldCheck,
+  Eye
 } from 'lucide-react';
 
 const AdminControlCenter = () => {
