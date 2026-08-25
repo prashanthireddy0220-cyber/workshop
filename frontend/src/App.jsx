@@ -23,13 +23,17 @@ const AppContent = () => {
   // Page Transition Loading state
   const [pageLoading, setPageLoading] = useState(true);
 
-  // Check URL pathname to determine if on restricted /admin or /registration/token route
-  const isAdminRoute = window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin');
+  // Check URL pathname/hash to determine if on restricted /admin or /registration/token route
+  const isAdminRoute = window.location.pathname.includes('admin') || window.location.hash.includes('admin');
   const isTokenRoute = window.location.pathname.startsWith('/registration/token') || window.location.pathname.startsWith('/token');
   const isMyRegistrationsRoute = window.location.pathname.startsWith('/my-registrations') || window.location.pathname.startsWith('/registration');
 
-  // Initial site load transition - 5.0 second total splash screen opening
+  // Initial site load transition - 5.0 second splash screen opening for public home page
   useEffect(() => {
+    if (isAdminRoute) {
+      setPageLoading(false);
+      return;
+    }
     const timer = setTimeout(() => {
       setPageLoading(false);
       if (isMyRegistrationsRoute && !isTokenRoute) {
@@ -41,7 +45,7 @@ const AppContent = () => {
       }
     }, 4300); // 4.3s display + 0.7s smooth fade out = 5 seconds total
     return () => clearTimeout(timer);
-  }, [user, isMyRegistrationsRoute, isTokenRoute]);
+  }, [user, isMyRegistrationsRoute, isTokenRoute, isAdminRoute]);
 
   // Modal visibility states for public student view
   const [authModalOpen, setAuthModalOpen] = useState(false);

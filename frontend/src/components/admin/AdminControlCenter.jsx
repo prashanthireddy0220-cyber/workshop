@@ -108,13 +108,13 @@ const AdminControlCenter = () => {
     setLoading(true);
     try {
       const [dashboardRes, regRes] = await Promise.all([
-        getAdminDashboard(),
+        getAdminDashboard().catch(err => ({ data: { success: false, stats: {} } })),
         getAdminRegistrations({
           q: searchQuery,
           department: deptFilter,
           year: yearFilter,
           paymentStatus: statusFilter
-        })
+        }).catch(err => ({ data: { success: false, registrations: [] } }))
       ]);
 
       if (dashboardRes.data.success) {
