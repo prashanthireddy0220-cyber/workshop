@@ -1,18 +1,61 @@
 const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const fs = require('fs');
+const mongoose = require('mongoose');
 const connectDB = require('./src/config/db');
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
+const server = http.createServer(app);
 
-// Trust reverse proxy headers (required for Render, Vercel, Heroku for express-rate-limit)
+// Initialize Socket.IO
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+    credentials: true
+  }
+});
+
+// Store io instance on app for controllers
+app.set('io', io);
+
+// Connected Volunteers Tracking for "Volunteers Online" count
+const connectedVolunteers = new Map();
+
+io.on('connection', (socket) => {
+  console.log(`[Socket] Connected: ${socket.id}`);
+
+  socket.on('volunteer_connected', (volunteerData) => {
+    if (volunteerData && (volunteerData.email || volunteerData.id)) {
+      const volId = volunteerData.email || volunteerData.id;
+      connectedVolunteers.set(socket.id, volId);
+      const onlineCount = new Set(connectedVolunteers.values()).size;
+      io.emit('volunteer_presence_updated', { volunteersOnline: onlineCount });
+    }
+  });
+
+  socket.on('disconnect', () => {
+    if (connectedVolunteers.has(socket.id)) {
+      connectedVolunteers.delete(socket.id);
+      const onlineCount = new Set(connectedVolunteers.values()).size;
+      io.emit('volunteer_presence_updated', { volunteersOnline: onlineCount });
+    }
+    console.log(`[Socket] Disconnected: ${socket.id}`);
+  });
+});
+
+// Helper function to get current online volunteers count
+app.set('getVolunteersOnlineCount', () => new Set(connectedVolunteers.values()).size);
+
+// Trust reverse proxy headers
 app.set('trust proxy', 1);
 
 // Ensure Uploads Directory Exists
@@ -31,7 +74,7 @@ app.use(async (req, res, next) => {
       try {
         await connectDB();
       } catch (err) {
-        // Ignored here; handled by readyState check below
+        // Ignored here
       }
       if (mongoose.connection.readyState !== 1) {
         return res.status(503).json({
@@ -62,12 +105,11 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, callback) => {
-      // allow requests with no origin (like mobile apps, curl)
       if (!origin) return callback(null, true);
       if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
         callback(null, true);
       } else {
-        callback(null, true); // Allow dev origins gracefully
+        callback(null, true);
       }
     },
     credentials: true
@@ -76,8 +118,8 @@ app.use(
 
 // Rate Limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 300, // Limit each IP to 300 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 500,
   message: { success: false, message: 'Too many requests, please try again later.' },
   validate: { xForwardedForHeader: false }
 });
@@ -125,6 +167,6 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`[Server] KARE IEEE Workshop Backend running on port ${PORT}`);
 });

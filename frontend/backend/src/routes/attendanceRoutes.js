@@ -1,19 +1,45 @@
 const express = require('express');
 const router = express.Router();
 const {
+  volunteerLogin,
+  getVolunteerMe,
+  startSession,
+  closeSession,
+  getCurrentSession,
   scanAttendance,
-  getAttendanceStatus,
-  getAttendanceStats
+  getVolunteers,
+  createVolunteer,
+  updateVolunteerStatus,
+  deleteVolunteer,
+  getSessionHistory,
+  getSessionRecords
 } = require('../controllers/attendanceController');
 const { protect, requireRoles } = require('../middleware/authMiddleware');
 
-// Public/Team attendance status route for /attend page
-router.get('/status', protect, getAttendanceStatus);
+// Volunteer Auth
+router.post('/login', volunteerLogin);
+router.get('/me', protect, getVolunteerMe);
 
-// Authorized scan & mark routes (admin & attendance_team)
-router.post('/scan', protect, requireRoles('admin', 'attendance_team'), scanAttendance);
-router.post('/mark', protect, requireRoles('admin', 'attendance_team'), scanAttendance);
-router.post('/check-in', protect, requireRoles('admin', 'attendance_team'), scanAttendance);
-router.get('/stats', protect, requireRoles('admin', 'attendance_team'), getAttendanceStats);
+// Session Status & Scan Routes
+router.get('/status', getCurrentSession);
+router.get('/current', getCurrentSession);
+router.get('/stats', getCurrentSession);
+router.post('/scan', protect, scanAttendance);
+router.post('/mark', protect, scanAttendance);
+router.post('/check-in', protect, scanAttendance);
+
+// Admin Attendance Session Control
+router.post('/session/start', protect, requireRoles('admin'), startSession);
+router.post('/session/close', protect, requireRoles('admin'), closeSession);
+
+// Admin Volunteer Management
+router.get('/volunteers', protect, requireRoles('admin'), getVolunteers);
+router.post('/volunteers', protect, requireRoles('admin'), createVolunteer);
+router.put('/volunteers/:id', protect, requireRoles('admin'), updateVolunteerStatus);
+router.delete('/volunteers/:id', protect, requireRoles('admin'), deleteVolunteer);
+
+// Admin Session History & Records
+router.get('/sessions', protect, requireRoles('admin'), getSessionHistory);
+router.get('/sessions/:sessionId/records', protect, requireRoles('admin'), getSessionRecords);
 
 module.exports = router;

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { io } from 'socket.io-client';
 import {
   getAdminDashboard,
   getAdminRegistrations,
@@ -12,10 +13,13 @@ import {
   directRegisterAdmin,
   markAdminAttendance,
   updateRegistrationSettingsApi,
-  updateAttendanceSettingsApi,
-  getAttendanceTeamApi,
-  addAttendanceTeamMemberApi,
-  removeAttendanceTeamMemberApi
+  startAttendanceSessionApi,
+  closeAttendanceSessionApi,
+  getCurrentAttendanceSessionApi,
+  getVolunteersApi,
+  createVolunteerApi,
+  updateVolunteerStatusApi,
+  deleteVolunteerApi
 } from '../../services/api';
 import PaymentApprovalModal from './PaymentApprovalModal';
 import QRScannerModal from './QRScannerModal';
@@ -110,42 +114,155 @@ const AdminControlCenter = () => {
   const [directFormLoading, setDirectFormLoading] = useState(false);
   const [directFormError, setDirectFormError] = useState('');
 
-  // Attendance & Registration Control Settings State
+  // Live Attendance Session & Volunteer Management State
   const [registrationLimitInput, setRegistrationLimitInput] = useState(200);
   const [registrationOpenState, setRegistrationOpenState] = useState(true);
-  const [attendanceLimitInput, setAttendanceLimitInput] = useState(200);
-  const [attendanceOpenState, setAttendanceOpenState] = useState(true);
-  const [attendanceTeam, setAttendanceTeam] = useState([]);
-  const [teamEmailInput, setTeamEmailInput] = useState('');
-  const [teamNameInput, setTeamNameInput] = useState('');
   const [settingsMsg, setSettingsMsg] = useState('');
 
-  const fetchTeamAndSettings = async () => {
+  const [sessionData, setSessionData] = useState({
+    status: 'CLOSED',
+    sessionName: 'IEEE Workshop Attendance',
+    presentCount: 0,
+    volunteersOnline: 0,
+    startedAt: null,
+    lastSessionStartedAt: null
+  });
+  const [sessionNameInput, setSessionNameInput] = useState('IEEE Workshop Attendance');
+  const [volunteersList, setVolunteersList] = useState([]);
+  const [newVolForm, setNewVolForm] = useState({ name: '', email: '', password: '' });
+
+  const fetchSessionAndVolunteers = async () => {
     try {
-      const [teamRes, dashboardRes] = await Promise.all([
-        getAttendanceTeamApi().catch(() => ({ data: {} })),
+      const [sessionRes, volRes, dashboardRes] = await Promise.all([
+        getCurrentAttendanceSessionApi().catch(() => ({ data: {} })),
+        getVolunteersApi().catch(() => ({ data: {} })),
         getAdminDashboard().catch(() => ({ data: {} }))
       ]);
 
-      if (teamRes.data?.success) {
-        setAttendanceTeam(teamRes.data.teamMembers || []);
+      if (sessionRes.data?.success) {
+        setSessionData({
+          status: sessionRes.data.status || 'CLOSED',
+          sessionName: sessionRes.data.sessionName || 'IEEE Workshop Attendance',
+          presentCount: sessionRes.data.presentCount || 0,
+          volunteersOnline: sessionRes.data.volunteersOnline || 0,
+          startedAt: sessionRes.data.startedAt || null,
+          lastSessionStartedAt: sessionRes.data.lastSessionStartedAt || null
+        });
+      }
+
+      if (volRes.data?.success) {
+        setVolunteersList(volRes.data.volunteers || []);
       }
 
       if (dashboardRes.data?.success && dashboardRes.data.stats) {
         const st = dashboardRes.data.stats;
         setRegistrationLimitInput(st.registrationLimit !== undefined ? st.registrationLimit : st.capacity || 200);
         setRegistrationOpenState(st.registrationOpen !== false);
-        setAttendanceLimitInput(st.attendanceLimit !== undefined ? st.attendanceLimit : st.capacity || 200);
-        setAttendanceOpenState(st.attendanceOpen !== false);
       }
     } catch (err) {
-      console.warn('[Fetch Team Error]', err);
+      console.warn('[Fetch Session & Volunteers Error]', err);
     }
   };
 
   useEffect(() => {
-    fetchTeamAndSettings();
+    fetchSessionAndVolunteers();
+
+    // Socket.IO for live Admin updates
+    const getSocketUrl = () => {
+      let url = (import.meta.env.VITE_API_URL || 'http://localhost:5001').trim();
+      return url.replace(/\/api\/?$/, '');
+    };
+
+    const socket = io(getSocketUrl(), { transports: ['websocket', 'polling'] });
+
+    socket.on('attendance_updated', (data) => {
+      if (data && data.presentCount !== undefined) {
+        setSessionData(prev => ({ ...prev, presentCount: data.presentCount }));
+      }
+    });
+
+    socket.on('attendance_session_changed', (data) => {
+      if (data) {
+        setSessionData(prev => ({
+          ...prev,
+          status: data.status,
+          sessionName: data.session?.sessionName || prev.sessionName,
+          presentCount: data.session?.presentCount !== undefined ? data.session.presentCount : (data.status === 'ACTIVE' ? prev.presentCount : 0)
+        }));
+      }
+    });
+
+    socket.on('volunteer_presence_updated', (data) => {
+      if (data && data.volunteersOnline !== undefined) {
+        setSessionData(prev => ({ ...prev, volunteersOnline: data.volunteersOnline }));
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, []);
+
+  const handleStartAttendanceSession = async () => {
+    try {
+      setSettingsMsg('');
+      const res = await startAttendanceSessionApi(sessionNameInput);
+      if (res.data?.success) {
+        setSettingsMsg('✓ Attendance session started! Status: ACTIVE');
+        fetchSessionAndVolunteers();
+      }
+    } catch (err) {
+      setSettingsMsg('✗ Failed to start attendance session: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleCloseAttendanceSession = async () => {
+    try {
+      setSettingsMsg('');
+      const res = await closeAttendanceSessionApi();
+      if (res.data?.success) {
+        setSettingsMsg('✓ Attendance session closed! Status: CLOSED');
+        fetchSessionAndVolunteers();
+      }
+    } catch (err) {
+      setSettingsMsg('✗ Failed to close attendance session: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleCreateVolunteerSubmit = async (e) => {
+    e.preventDefault();
+    if (!newVolForm.email || !newVolForm.password || !newVolForm.name) return;
+    try {
+      const res = await createVolunteerApi(newVolForm);
+      if (res.data?.success) {
+        setNewVolForm({ name: '', email: '', password: '' });
+        setSettingsMsg('✓ Volunteer account created successfully!');
+        fetchSessionAndVolunteers();
+      }
+    } catch (err) {
+      setSettingsMsg('✗ Failed to create volunteer: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleToggleVolStatus = async (volId, currentStatus) => {
+    try {
+      const nextStatus = currentStatus === 'ACTIVE' ? 'DISABLED' : 'ACTIVE';
+      await updateVolunteerStatusApi(volId, { status: nextStatus });
+      fetchSessionAndVolunteers();
+    } catch (err) {
+      alert('Failed to update volunteer status.');
+    }
+  };
+
+  const handleDeleteVol = async (volId) => {
+    if (!window.confirm('Are you sure you want to delete this volunteer account?')) return;
+    try {
+      await deleteVolunteerApi(volId);
+      fetchSessionAndVolunteers();
+    } catch (err) {
+      alert('Failed to delete volunteer account.');
+    }
+  };
 
   const handleSaveRegistrationSettings = async () => {
     try {
@@ -160,53 +277,6 @@ const AdminControlCenter = () => {
       }
     } catch (err) {
       setSettingsMsg('✗ Failed to save registration settings: ' + (err.response?.data?.message || err.message));
-    }
-  };
-
-  const handleSaveAttendanceSettings = async () => {
-    try {
-      setSettingsMsg('');
-      const res = await updateAttendanceSettingsApi({
-        attendanceOpen: attendanceOpenState,
-        attendanceLimit: parseInt(attendanceLimitInput, 10)
-      });
-      if (res.data.success) {
-        setSettingsMsg('✓ Attendance settings saved successfully!');
-        fetchAllData();
-      }
-    } catch (err) {
-      setSettingsMsg('✗ Failed to save attendance settings: ' + (err.response?.data?.message || err.message));
-    }
-  };
-
-  const handleAddTeamMember = async (e) => {
-    e.preventDefault();
-    if (!teamEmailInput.trim()) return;
-    try {
-      const res = await addAttendanceTeamMemberApi({
-        email: teamEmailInput.trim(),
-        name: teamNameInput.trim()
-      });
-      if (res.data.success) {
-        setTeamEmailInput('');
-        setTeamNameInput('');
-        fetchTeamAndSettings();
-        setSettingsMsg('✓ Team member added successfully!');
-      }
-    } catch (err) {
-      setSettingsMsg('✗ Failed to add team member: ' + (err.response?.data?.message || err.message));
-    }
-  };
-
-  const handleRemoveTeamMember = async (memberId) => {
-    try {
-      const res = await removeAttendanceTeamMemberApi(memberId);
-      if (res.data.success) {
-        fetchTeamAndSettings();
-        setSettingsMsg('✓ Team member removed successfully!');
-      }
-    } catch (err) {
-      setSettingsMsg('✗ Failed to remove team member: ' + (err.response?.data?.message || err.message));
     }
   };
 
@@ -767,101 +837,161 @@ const AdminControlCenter = () => {
             </div>
           </div>
 
-          {/* 2. ATTENDANCE SETTINGS CARD */}
+          {/* 2. ATTENDANCE MANAGEMENT CARD (Replaces old ATTENDANCE SETTINGS) */}
           <div style={{ background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '24px', padding: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }}>
             <h3 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#FFFFFF', margin: '0 0 16px 0', textTransform: 'uppercase', letterSpacing: '0.02em', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <QrCode size={18} color="#38BDF8" /> Attendance Settings
+              <QrCode size={18} color="#38BDF8" /> ATTENDANCE MANAGEMENT
             </h3>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              {/* Status Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255, 255, 255, 0.03)', padding: '12px 16px', borderRadius: '16px' }}>
                 <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#94A3B8' }}>Attendance Status:</span>
-                <button
-                  type="button"
-                  onClick={() => setAttendanceOpenState(!attendanceOpenState)}
-                  style={{
-                    background: attendanceOpenState ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                    color: attendanceOpenState ? '#4ADE80' : '#F87171',
-                    border: attendanceOpenState ? '1px solid rgba(34, 197, 94, 0.4)' : '1px solid rgba(239, 68, 68, 0.4)',
-                    padding: '8px 16px',
-                    borderRadius: '9999px',
-                    fontWeight: 800,
-                    fontSize: '0.82rem',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}
-                >
-                  {attendanceOpenState ? <Unlock size={14} /> : <Lock size={14} />}
-                  ATTENDANCE: {attendanceOpenState ? 'ON (ACTIVE)' : 'OFF (CLOSED)'}
-                </button>
+                <span style={{
+                  background: sessionData.status === 'ACTIVE' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                  color: sessionData.status === 'ACTIVE' ? '#4ADE80' : '#F87171',
+                  border: sessionData.status === 'ACTIVE' ? '1px solid rgba(34, 197, 94, 0.4)' : '1px solid rgba(239, 68, 68, 0.4)',
+                  padding: '6px 16px',
+                  borderRadius: '9999px',
+                  fontWeight: 900,
+                  fontSize: '0.82rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}>
+                  {sessionData.status === 'ACTIVE' ? <Unlock size={14} /> : <Lock size={14} />}
+                  {sessionData.status === 'ACTIVE' ? 'ACTIVE' : 'CLOSED'}
+                </span>
               </div>
 
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#CBD5E1', marginBottom: '6px' }}>
-                  Attendance Limit:
-                </label>
-                <input
-                  type="number"
-                  value={attendanceLimitInput}
-                  onChange={(e) => setAttendanceLimitInput(e.target.value)}
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.9rem', fontWeight: 700 }}
-                />
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', background: 'rgba(255, 255, 255, 0.03)', padding: '12px 16px', borderRadius: '12px', fontSize: '0.85rem' }}>
-                <div>
-                  <span style={{ color: '#94A3B8' }}>Current Attendance: </span>
-                  <strong style={{ color: '#38BDF8' }}>{safeStats.totalAttendance || 0}</strong>
+              {/* Active Session Info Box */}
+              {sessionData.status === 'ACTIVE' ? (
+                <div style={{ background: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.25)', borderRadius: '16px', padding: '16px' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#38BDF8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
+                    LIVE ATTENDANCE
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '0.85rem' }}>
+                    <div>
+                      <span style={{ color: '#94A3B8' }}>Present: </span>
+                      <strong style={{ color: '#4ADE80', fontSize: '1.1rem' }}>{sessionData.presentCount}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: '#94A3B8' }}>Status: </span>
+                      <strong style={{ color: '#4ADE80' }}>ACTIVE</strong>
+                    </div>
+                    <div style={{ gridColumn: 'span 2' }}>
+                      <span style={{ color: '#94A3B8' }}>Volunteers Online: </span>
+                      <strong style={{ color: '#38BDF8' }}>{sessionData.volunteersOnline}</strong>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <span style={{ color: '#94A3B8' }}>Remaining: </span>
-                  <strong style={{ color: '#4ADE80' }}>{Math.max(0, attendanceLimitInput - (safeStats.totalAttendance || 0))}</strong>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', background: 'rgba(255, 255, 255, 0.03)', padding: '10px 14px', borderRadius: '12px', fontSize: '0.85rem' }}>
+                    <span style={{ color: '#94A3B8' }}>Current Attendance:</span>
+                    <strong style={{ color: '#FFF' }}>{sessionData.presentCount}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', background: 'rgba(255, 255, 255, 0.03)', padding: '10px 14px', borderRadius: '12px', fontSize: '0.85rem' }}>
+                    <span style={{ color: '#94A3B8' }}>Last Session Started:</span>
+                    <strong style={{ color: '#38BDF8' }}>
+                      {sessionData.startedAt ? new Date(sessionData.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (sessionData.lastSessionStartedAt ? new Date(sessionData.lastSessionStartedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--')}
+                    </strong>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <button
-                type="button"
-                onClick={handleSaveAttendanceSettings}
-                style={{ background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)', color: '#FFF', border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 800, fontSize: '0.88rem', cursor: 'pointer', textAlign: 'center' }}
-              >
-                Save Attendance Settings
-              </button>
+              {/* Start / Close Session Form */}
+              {sessionData.status === 'CLOSED' ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#CBD5E1' }}>
+                    Session Name (Optional):
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. IEEE Workshop Attendance"
+                    value={sessionNameInput}
+                    onChange={(e) => setSessionNameInput(e.target.value)}
+                    style={{ padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.88rem' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleStartAttendanceSession}
+                    style={{ background: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)', color: '#FFF', border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer', textAlign: 'center', boxShadow: '0 4px 14px rgba(34, 197, 94, 0.35)' }}
+                  >
+                    START ATTENDANCE
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={handleCloseAttendanceSession}
+                    style={{ flex: 1, background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)', color: '#FFF', border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 800, fontSize: '0.88rem', cursor: 'pointer', textAlign: 'center' }}
+                  >
+                    CLOSE ATTENDANCE
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAttendanceModalOpen(true)}
+                    style={{ background: 'rgba(255, 255, 255, 0.08)', color: '#38BDF8', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '12px 16px', borderRadius: '12px', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}
+                  >
+                    VIEW ATTENDANCE
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* 3. ATTENDANCE TEAM MANAGEMENT CARD */}
+          {/* 3. VOLUNTEER MANAGEMENT CARD (Replaces old ATTENDANCE TEAM MANAGEMENT) */}
           <div style={{ background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '24px', padding: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }}>
             <h3 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#FFFFFF', margin: '0 0 16px 0', textTransform: 'uppercase', letterSpacing: '0.02em', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <UserCheck size={18} color="#4ADE80" /> Attendance Team Management
+              <UserCheck size={18} color="#4ADE80" /> VOLUNTEER MANAGEMENT
             </h3>
 
-            {/* List of Authorized Members */}
-            <div style={{ marginBottom: '16px', maxHeight: '160px', overflowY: 'auto' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Authorized Team Members ({attendanceTeam.length})
-              </span>
-              {attendanceTeam.length === 0 ? (
-                <p style={{ color: '#64748B', fontSize: '0.82rem', marginTop: '6px' }}>No team members assigned yet. Add one below.</p>
+            {/* List of Registered Volunteers */}
+            <div style={{ marginBottom: '16px', maxHeight: '170px', overflowY: 'auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Volunteers List ({volunteersList.length})
+                </span>
+                <span style={{ fontSize: '0.72rem', color: '#38BDF8', fontWeight: 700 }}>
+                  Online: {sessionData.volunteersOnline}
+                </span>
+              </div>
+
+              {volunteersList.length === 0 ? (
+                <p style={{ color: '#64748B', fontSize: '0.82rem', marginTop: '6px' }}>No volunteer accounts created yet. Add one below.</p>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
-                  {attendanceTeam.map((member) => (
-                    <div key={member._id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255, 255, 255, 0.03)', padding: '8px 12px', borderRadius: '10px', fontSize: '0.82rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {volunteersList.map((vol) => (
+                    <div key={vol._id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255, 255, 255, 0.03)', padding: '8px 12px', borderRadius: '10px', fontSize: '0.82rem' }}>
                       <div>
-                        <strong style={{ color: '#FFF' }}>{member.name || member.email}</strong>
-                        <div style={{ fontSize: '0.72rem', color: '#94A3B8' }}>{member.email}</div>
+                        <strong style={{ color: '#FFF' }}>{vol.name}</strong>
+                        <div style={{ fontSize: '0.72rem', color: '#94A3B8' }}>{vol.email}</div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ADE80', fontSize: '0.7rem', fontWeight: 800, padding: '2px 8px', borderRadius: '12px' }}>
-                          ACTIVE
-                        </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <button
                           type="button"
-                          onClick={() => handleRemoveTeamMember(member._id)}
+                          onClick={() => handleToggleVolStatus(vol._id, vol.status)}
+                          style={{
+                            background: vol.status === 'ACTIVE' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                            color: vol.status === 'ACTIVE' ? '#4ADE80' : '#F87171',
+                            border: 'none',
+                            padding: '3px 8px',
+                            borderRadius: '10px',
+                            fontSize: '0.7rem',
+                            fontWeight: 800,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {vol.status === 'ACTIVE' ? 'ACTIVE' : 'DISABLED'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteVol(vol._id)}
                           style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#F87171', border: 'none', padding: '4px 8px', borderRadius: '8px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}
                         >
-                          Remove
+                          Delete
                         </button>
                       </div>
                     </div>
@@ -870,28 +1000,37 @@ const AdminControlCenter = () => {
               )}
             </div>
 
-            {/* Add Team Member Form */}
-            <form onSubmit={handleAddTeamMember} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {/* Add Volunteer Form */}
+            <form onSubmit={handleCreateVolunteerSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <input
-                type="email"
-                placeholder="Team Member KLU Email (@klu.ac.in)"
-                value={teamEmailInput}
-                onChange={(e) => setTeamEmailInput(e.target.value)}
+                type="text"
+                placeholder="Volunteer Name"
+                value={newVolForm.name}
+                onChange={(e) => setNewVolForm(prev => ({ ...prev, name: e.target.value }))}
                 required
                 style={{ padding: '8px 12px', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.85rem' }}
               />
               <input
-                type="text"
-                placeholder="Member Name (Optional)"
-                value={teamNameInput}
-                onChange={(e) => setTeamNameInput(e.target.value)}
+                type="email"
+                placeholder="Volunteer Email / Username"
+                value={newVolForm.email}
+                onChange={(e) => setNewVolForm(prev => ({ ...prev, email: e.target.value }))}
+                required
+                style={{ padding: '8px 12px', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.85rem' }}
+              />
+              <input
+                type="password"
+                placeholder="Set Volunteer Password"
+                value={newVolForm.password}
+                onChange={(e) => setNewVolForm(prev => ({ ...prev, password: e.target.value }))}
+                required
                 style={{ padding: '8px 12px', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.85rem' }}
               />
               <button
                 type="submit"
-                style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ADE80', border: '1px solid rgba(34, 197, 94, 0.4)', padding: '10px', borderRadius: '10px', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer' }}
+                style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38BDF8', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '10px', borderRadius: '10px', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer' }}
               >
-                + Add Attendance Team Member
+                + Add Volunteer Account
               </button>
             </form>
           </div>

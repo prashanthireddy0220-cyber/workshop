@@ -22,7 +22,7 @@ const api = axios.create({
 // Interceptor to attach Bearer token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('volunteerToken') || localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -100,13 +100,27 @@ export const deleteAdminGalleryItem = (id) => api.delete(`/admin/gallery/${id}`)
 export const getTicket = (registrationId) => api.get(`/tickets/${registrationId}`);
 export const getTicketDownloadUrl = (registrationId) => `${API_BASE}/tickets/${registrationId}/download`;
 
-// Attendance Services
+// Attendance & Session Control Services
 export const checkInParticipant = (token) => api.post('/attendance/check-in', { token });
 export const scanAttendanceApi = (token) => api.post('/attendance/scan', { token });
 export const getAttendanceStatusApi = () => api.get('/attendance/status');
 export const getAttendanceStatsApi = () => api.get('/attendance/stats');
 
-// Admin Settings & Attendance Team API
+// Volunteer Auth & Live Session Control
+export const volunteerLoginApi = (email, password) => api.post('/attendance/login', { email, password });
+export const getVolunteerMeApi = () => api.get('/attendance/me');
+export const startAttendanceSessionApi = (sessionName) => api.post('/attendance/session/start', { sessionName });
+export const closeAttendanceSessionApi = () => api.post('/attendance/session/close');
+export const getCurrentAttendanceSessionApi = () => api.get('/attendance/current');
+
+// Admin Volunteer Management API
+export const getVolunteersApi = () => api.get('/attendance/volunteers');
+export const createVolunteerApi = (data) => api.post('/attendance/volunteers', data);
+export const updateVolunteerStatusApi = (id, data) => api.put(`/attendance/volunteers/${id}`, data);
+export const deleteVolunteerApi = (id) => api.delete(`/attendance/volunteers/${id}`);
+export const getAttendanceSessionHistoryApi = () => api.get('/attendance/sessions');
+
+// Admin Settings API
 export const updateRegistrationSettingsApi = (settings) => api.put('/admin/registration-settings', settings);
 export const updateAttendanceSettingsApi = (settings) => api.put('/admin/attendance-settings', settings);
 export const getAttendanceTeamApi = () => api.get('/admin/attendance-team');

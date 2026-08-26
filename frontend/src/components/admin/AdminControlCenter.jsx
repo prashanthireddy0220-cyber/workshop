@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { io } from 'socket.io-client';
 import {
   getAdminDashboard,
   getAdminRegistrations,
@@ -12,10 +13,13 @@ import {
   directRegisterAdmin,
   markAdminAttendance,
   updateRegistrationSettingsApi,
-  updateAttendanceSettingsApi,
-  getAttendanceTeamApi,
-  addAttendanceTeamMemberApi,
-  removeAttendanceTeamMemberApi
+  startAttendanceSessionApi,
+  closeAttendanceSessionApi,
+  getCurrentAttendanceSessionApi,
+  getVolunteersApi,
+  createVolunteerApi,
+  updateVolunteerStatusApi,
+  deleteVolunteerApi
 } from '../../services/api';
 import PaymentApprovalModal from './PaymentApprovalModal';
 import QRScannerModal from './QRScannerModal';
@@ -78,7 +82,7 @@ const AdminControlCenter = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [attendanceModalOpen, setAttendanceModalOpen] = useState(false);
 
-  // Event Settings State (Matching Photo 1)
+  // Event Settings State
   const [eventSettings, setEventSettings] = useState({
     eventName: 'Intelligent Yield Prediction & AI/ML Workshop',
     organizedBy: 'KARE IEEE Education Society',
@@ -91,8 +95,8 @@ const AdminControlCenter = () => {
     registrationOpen: true
   });
 
-  // Attendance Modal State (Matching Photo 2)
-  const [attendanceTab, setAttendanceTab] = useState('ALL'); // ALL, PRESENT, ABSENT
+  // Attendance Modal State
+  const [attendanceTab, setAttendanceTab] = useState('ALL');
   const [manualScanInput, setManualScanInput] = useState('');
   const [cameraPaused, setCameraPaused] = useState(false);
 
@@ -110,42 +114,155 @@ const AdminControlCenter = () => {
   const [directFormLoading, setDirectFormLoading] = useState(false);
   const [directFormError, setDirectFormError] = useState('');
 
-  // Attendance & Registration Control Settings State
+  // Live Attendance Session & Volunteer Management State
   const [registrationLimitInput, setRegistrationLimitInput] = useState(200);
   const [registrationOpenState, setRegistrationOpenState] = useState(true);
-  const [attendanceLimitInput, setAttendanceLimitInput] = useState(200);
-  const [attendanceOpenState, setAttendanceOpenState] = useState(true);
-  const [attendanceTeam, setAttendanceTeam] = useState([]);
-  const [teamEmailInput, setTeamEmailInput] = useState('');
-  const [teamNameInput, setTeamNameInput] = useState('');
   const [settingsMsg, setSettingsMsg] = useState('');
 
-  const fetchTeamAndSettings = async () => {
+  const [sessionData, setSessionData] = useState({
+    status: 'CLOSED',
+    sessionName: 'IEEE Workshop Attendance',
+    presentCount: 0,
+    volunteersOnline: 0,
+    startedAt: null,
+    lastSessionStartedAt: null
+  });
+  const [sessionNameInput, setSessionNameInput] = useState('IEEE Workshop Attendance');
+  const [volunteersList, setVolunteersList] = useState([]);
+  const [newVolForm, setNewVolForm] = useState({ name: '', email: '', password: '' });
+
+  const fetchSessionAndVolunteers = async () => {
     try {
-      const [teamRes, dashboardRes] = await Promise.all([
-        getAttendanceTeamApi().catch(() => ({ data: {} })),
+      const [sessionRes, volRes, dashboardRes] = await Promise.all([
+        getCurrentAttendanceSessionApi().catch(() => ({ data: {} })),
+        getVolunteersApi().catch(() => ({ data: {} })),
         getAdminDashboard().catch(() => ({ data: {} }))
       ]);
 
-      if (teamRes.data?.success) {
-        setAttendanceTeam(teamRes.data.teamMembers || []);
+      if (sessionRes.data?.success) {
+        setSessionData({
+          status: sessionRes.data.status || 'CLOSED',
+          sessionName: sessionRes.data.sessionName || 'IEEE Workshop Attendance',
+          presentCount: sessionRes.data.presentCount || 0,
+          volunteersOnline: sessionRes.data.volunteersOnline || 0,
+          startedAt: sessionRes.data.startedAt || null,
+          lastSessionStartedAt: sessionRes.data.lastSessionStartedAt || null
+        });
+      }
+
+      if (volRes.data?.success) {
+        setVolunteersList(volRes.data.volunteers || []);
       }
 
       if (dashboardRes.data?.success && dashboardRes.data.stats) {
         const st = dashboardRes.data.stats;
         setRegistrationLimitInput(st.registrationLimit !== undefined ? st.registrationLimit : st.capacity || 200);
         setRegistrationOpenState(st.registrationOpen !== false);
-        setAttendanceLimitInput(st.attendanceLimit !== undefined ? st.attendanceLimit : st.capacity || 200);
-        setAttendanceOpenState(st.attendanceOpen !== false);
       }
     } catch (err) {
-      console.warn('[Fetch Team Error]', err);
+      console.warn('[Fetch Session & Volunteers Error]', err);
     }
   };
 
   useEffect(() => {
-    fetchTeamAndSettings();
+    fetchSessionAndVolunteers();
+
+    // Socket.IO for live Admin updates
+    const getSocketUrl = () => {
+      let url = (import.meta.env.VITE_API_URL || 'http://localhost:5001').trim();
+      return url.replace(/\/api\/?$/, '');
+    };
+
+    const socket = io(getSocketUrl(), { transports: ['websocket', 'polling'] });
+
+    socket.on('attendance_updated', (data) => {
+      if (data && data.presentCount !== undefined) {
+        setSessionData(prev => ({ ...prev, presentCount: data.presentCount }));
+      }
+    });
+
+    socket.on('attendance_session_changed', (data) => {
+      if (data) {
+        setSessionData(prev => ({
+          ...prev,
+          status: data.status,
+          sessionName: data.session?.sessionName || prev.sessionName,
+          presentCount: data.session?.presentCount !== undefined ? data.session.presentCount : (data.status === 'ACTIVE' ? prev.presentCount : 0)
+        }));
+      }
+    });
+
+    socket.on('volunteer_presence_updated', (data) => {
+      if (data && data.volunteersOnline !== undefined) {
+        setSessionData(prev => ({ ...prev, volunteersOnline: data.volunteersOnline }));
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, []);
+
+  const handleStartAttendanceSession = async () => {
+    try {
+      setSettingsMsg('');
+      const res = await startAttendanceSessionApi(sessionNameInput);
+      if (res.data?.success) {
+        setSettingsMsg('✓ Attendance session started! Status: ACTIVE');
+        fetchSessionAndVolunteers();
+      }
+    } catch (err) {
+      setSettingsMsg('✗ Failed to start attendance session: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleCloseAttendanceSession = async () => {
+    try {
+      setSettingsMsg('');
+      const res = await closeAttendanceSessionApi();
+      if (res.data?.success) {
+        setSettingsMsg('✓ Attendance session closed! Status: CLOSED');
+        fetchSessionAndVolunteers();
+      }
+    } catch (err) {
+      setSettingsMsg('✗ Failed to close attendance session: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleCreateVolunteerSubmit = async (e) => {
+    e.preventDefault();
+    if (!newVolForm.email || !newVolForm.password || !newVolForm.name) return;
+    try {
+      const res = await createVolunteerApi(newVolForm);
+      if (res.data?.success) {
+        setNewVolForm({ name: '', email: '', password: '' });
+        setSettingsMsg('✓ Volunteer account created successfully!');
+        fetchSessionAndVolunteers();
+      }
+    } catch (err) {
+      setSettingsMsg('✗ Failed to create volunteer: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleToggleVolStatus = async (volId, currentStatus) => {
+    try {
+      const nextStatus = currentStatus === 'ACTIVE' ? 'DISABLED' : 'ACTIVE';
+      await updateVolunteerStatusApi(volId, { status: nextStatus });
+      fetchSessionAndVolunteers();
+    } catch (err) {
+      alert('Failed to update volunteer status.');
+    }
+  };
+
+  const handleDeleteVol = async (volId) => {
+    if (!window.confirm('Are you sure you want to delete this volunteer account?')) return;
+    try {
+      await deleteVolunteerApi(volId);
+      fetchSessionAndVolunteers();
+    } catch (err) {
+      alert('Failed to delete volunteer account.');
+    }
+  };
 
   const handleSaveRegistrationSettings = async () => {
     try {
@@ -160,53 +277,6 @@ const AdminControlCenter = () => {
       }
     } catch (err) {
       setSettingsMsg('✗ Failed to save registration settings: ' + (err.response?.data?.message || err.message));
-    }
-  };
-
-  const handleSaveAttendanceSettings = async () => {
-    try {
-      setSettingsMsg('');
-      const res = await updateAttendanceSettingsApi({
-        attendanceOpen: attendanceOpenState,
-        attendanceLimit: parseInt(attendanceLimitInput, 10)
-      });
-      if (res.data.success) {
-        setSettingsMsg('✓ Attendance settings saved successfully!');
-        fetchAllData();
-      }
-    } catch (err) {
-      setSettingsMsg('✗ Failed to save attendance settings: ' + (err.response?.data?.message || err.message));
-    }
-  };
-
-  const handleAddTeamMember = async (e) => {
-    e.preventDefault();
-    if (!teamEmailInput.trim()) return;
-    try {
-      const res = await addAttendanceTeamMemberApi({
-        email: teamEmailInput.trim(),
-        name: teamNameInput.trim()
-      });
-      if (res.data.success) {
-        setTeamEmailInput('');
-        setTeamNameInput('');
-        fetchTeamAndSettings();
-        setSettingsMsg('✓ Team member added successfully!');
-      }
-    } catch (err) {
-      setSettingsMsg('✗ Failed to add team member: ' + (err.response?.data?.message || err.message));
-    }
-  };
-
-  const handleRemoveTeamMember = async (memberId) => {
-    try {
-      const res = await removeAttendanceTeamMemberApi(memberId);
-      if (res.data.success) {
-        fetchTeamAndSettings();
-        setSettingsMsg('✓ Team member removed successfully!');
-      }
-    } catch (err) {
-      setSettingsMsg('✗ Failed to remove team member: ' + (err.response?.data?.message || err.message));
     }
   };
 
@@ -440,7 +510,7 @@ const AdminControlCenter = () => {
       <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
 
         {/* ==========================================================================
-           TOP HEADER & CONTROL CENTER BANNER (Dark Website Theme)
+           TOP HEADER & CONTROL CENTER BANNER
            ========================================================================== */}
         <div style={{
           background: 'rgba(15, 23, 42, 0.8)',
@@ -594,7 +664,7 @@ const AdminControlCenter = () => {
         </div>
 
         {/* ==========================================================================
-           METRIC STAT CARDS ROW (Dark Theme Glassmorphic Cards)
+           METRIC STAT CARDS ROW
            ========================================================================== */}
         <div style={{
           display: 'grid',
@@ -678,7 +748,7 @@ const AdminControlCenter = () => {
 
         </div>
 
-        {/* Feedback / Toast message for settings updates */}
+        {/* Toast Notification */}
         {settingsMsg && (
           <div style={{
             background: settingsMsg.startsWith('✓') ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
@@ -699,7 +769,7 @@ const AdminControlCenter = () => {
         )}
 
         {/* ==========================================================================
-           REGISTRATION, ATTENDANCE & TEAM MANAGEMENT CONTROL CENTER
+           REGISTRATION, ATTENDANCE & VOLUNTEER CONTROL CENTER
            ========================================================================== */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '28px' }}>
 
@@ -767,101 +837,161 @@ const AdminControlCenter = () => {
             </div>
           </div>
 
-          {/* 2. ATTENDANCE SETTINGS CARD */}
+          {/* 2. ATTENDANCE MANAGEMENT CARD (Replaces old ATTENDANCE SETTINGS) */}
           <div style={{ background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '24px', padding: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }}>
             <h3 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#FFFFFF', margin: '0 0 16px 0', textTransform: 'uppercase', letterSpacing: '0.02em', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <QrCode size={18} color="#38BDF8" /> Attendance Settings
+              <QrCode size={18} color="#38BDF8" /> ATTENDANCE MANAGEMENT
             </h3>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              {/* Status Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255, 255, 255, 0.03)', padding: '12px 16px', borderRadius: '16px' }}>
                 <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#94A3B8' }}>Attendance Status:</span>
-                <button
-                  type="button"
-                  onClick={() => setAttendanceOpenState(!attendanceOpenState)}
-                  style={{
-                    background: attendanceOpenState ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                    color: attendanceOpenState ? '#4ADE80' : '#F87171',
-                    border: attendanceOpenState ? '1px solid rgba(34, 197, 94, 0.4)' : '1px solid rgba(239, 68, 68, 0.4)',
-                    padding: '8px 16px',
-                    borderRadius: '9999px',
-                    fontWeight: 800,
-                    fontSize: '0.82rem',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}
-                >
-                  {attendanceOpenState ? <Unlock size={14} /> : <Lock size={14} />}
-                  ATTENDANCE: {attendanceOpenState ? 'ON (ACTIVE)' : 'OFF (CLOSED)'}
-                </button>
+                <span style={{
+                  background: sessionData.status === 'ACTIVE' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                  color: sessionData.status === 'ACTIVE' ? '#4ADE80' : '#F87171',
+                  border: sessionData.status === 'ACTIVE' ? '1px solid rgba(34, 197, 94, 0.4)' : '1px solid rgba(239, 68, 68, 0.4)',
+                  padding: '6px 16px',
+                  borderRadius: '9999px',
+                  fontWeight: 900,
+                  fontSize: '0.82rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}>
+                  {sessionData.status === 'ACTIVE' ? <Unlock size={14} /> : <Lock size={14} />}
+                  {sessionData.status === 'ACTIVE' ? 'ACTIVE' : 'CLOSED'}
+                </span>
               </div>
 
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#CBD5E1', marginBottom: '6px' }}>
-                  Attendance Limit:
-                </label>
-                <input
-                  type="number"
-                  value={attendanceLimitInput}
-                  onChange={(e) => setAttendanceLimitInput(e.target.value)}
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.9rem', fontWeight: 700 }}
-                />
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', background: 'rgba(255, 255, 255, 0.03)', padding: '12px 16px', borderRadius: '12px', fontSize: '0.85rem' }}>
-                <div>
-                  <span style={{ color: '#94A3B8' }}>Current Attendance: </span>
-                  <strong style={{ color: '#38BDF8' }}>{safeStats.totalAttendance || 0}</strong>
+              {/* Active Session Info Box */}
+              {sessionData.status === 'ACTIVE' ? (
+                <div style={{ background: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.25)', borderRadius: '16px', padding: '16px' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#38BDF8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
+                    LIVE ATTENDANCE
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '0.85rem' }}>
+                    <div>
+                      <span style={{ color: '#94A3B8' }}>Present: </span>
+                      <strong style={{ color: '#4ADE80', fontSize: '1.1rem' }}>{sessionData.presentCount}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: '#94A3B8' }}>Status: </span>
+                      <strong style={{ color: '#4ADE80' }}>ACTIVE</strong>
+                    </div>
+                    <div style={{ gridColumn: 'span 2' }}>
+                      <span style={{ color: '#94A3B8' }}>Volunteers Online: </span>
+                      <strong style={{ color: '#38BDF8' }}>{sessionData.volunteersOnline}</strong>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <span style={{ color: '#94A3B8' }}>Remaining: </span>
-                  <strong style={{ color: '#4ADE80' }}>{Math.max(0, attendanceLimitInput - (safeStats.totalAttendance || 0))}</strong>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', background: 'rgba(255, 255, 255, 0.03)', padding: '10px 14px', borderRadius: '12px', fontSize: '0.85rem' }}>
+                    <span style={{ color: '#94A3B8' }}>Current Attendance:</span>
+                    <strong style={{ color: '#FFF' }}>{sessionData.presentCount}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', background: 'rgba(255, 255, 255, 0.03)', padding: '10px 14px', borderRadius: '12px', fontSize: '0.85rem' }}>
+                    <span style={{ color: '#94A3B8' }}>Last Session Started:</span>
+                    <strong style={{ color: '#38BDF8' }}>
+                      {sessionData.startedAt ? new Date(sessionData.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (sessionData.lastSessionStartedAt ? new Date(sessionData.lastSessionStartedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--')}
+                    </strong>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <button
-                type="button"
-                onClick={handleSaveAttendanceSettings}
-                style={{ background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)', color: '#FFF', border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 800, fontSize: '0.88rem', cursor: 'pointer', textAlign: 'center' }}
-              >
-                Save Attendance Settings
-              </button>
+              {/* Start / Close Session Form */}
+              {sessionData.status === 'CLOSED' ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#CBD5E1' }}>
+                    Session Name (Optional):
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. IEEE Workshop Attendance"
+                    value={sessionNameInput}
+                    onChange={(e) => setSessionNameInput(e.target.value)}
+                    style={{ padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.88rem' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleStartAttendanceSession}
+                    style={{ background: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)', color: '#FFF', border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer', textAlign: 'center', boxShadow: '0 4px 14px rgba(34, 197, 94, 0.35)' }}
+                  >
+                    START ATTENDANCE
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={handleCloseAttendanceSession}
+                    style={{ flex: 1, background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)', color: '#FFF', border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 800, fontSize: '0.88rem', cursor: 'pointer', textAlign: 'center' }}
+                  >
+                    CLOSE ATTENDANCE
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAttendanceModalOpen(true)}
+                    style={{ background: 'rgba(255, 255, 255, 0.08)', color: '#38BDF8', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '12px 16px', borderRadius: '12px', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}
+                  >
+                    VIEW ATTENDANCE
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* 3. ATTENDANCE TEAM MANAGEMENT CARD */}
+          {/* 3. VOLUNTEER MANAGEMENT CARD (Replaces old ATTENDANCE TEAM MANAGEMENT) */}
           <div style={{ background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '24px', padding: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }}>
             <h3 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#FFFFFF', margin: '0 0 16px 0', textTransform: 'uppercase', letterSpacing: '0.02em', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <UserCheck size={18} color="#4ADE80" /> Attendance Team Management
+              <UserCheck size={18} color="#4ADE80" /> VOLUNTEER MANAGEMENT
             </h3>
 
-            {/* List of Authorized Members */}
-            <div style={{ marginBottom: '16px', maxHeight: '160px', overflowY: 'auto' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Authorized Team Members ({attendanceTeam.length})
-              </span>
-              {attendanceTeam.length === 0 ? (
-                <p style={{ color: '#64748B', fontSize: '0.82rem', marginTop: '6px' }}>No team members assigned yet. Add one below.</p>
+            {/* List of Registered Volunteers */}
+            <div style={{ marginBottom: '16px', maxHeight: '170px', overflowY: 'auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Volunteers List ({volunteersList.length})
+                </span>
+                <span style={{ fontSize: '0.72rem', color: '#38BDF8', fontWeight: 700 }}>
+                  Online: {sessionData.volunteersOnline}
+                </span>
+              </div>
+
+              {volunteersList.length === 0 ? (
+                <p style={{ color: '#64748B', fontSize: '0.82rem', marginTop: '6px' }}>No volunteer accounts created yet. Add one below.</p>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
-                  {attendanceTeam.map((member) => (
-                    <div key={member._id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255, 255, 255, 0.03)', padding: '8px 12px', borderRadius: '10px', fontSize: '0.82rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {volunteersList.map((vol) => (
+                    <div key={vol._id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255, 255, 255, 0.03)', padding: '8px 12px', borderRadius: '10px', fontSize: '0.82rem' }}>
                       <div>
-                        <strong style={{ color: '#FFF' }}>{member.name || member.email}</strong>
-                        <div style={{ fontSize: '0.72rem', color: '#94A3B8' }}>{member.email}</div>
+                        <strong style={{ color: '#FFF' }}>{vol.name}</strong>
+                        <div style={{ fontSize: '0.72rem', color: '#94A3B8' }}>{vol.email}</div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ADE80', fontSize: '0.7rem', fontWeight: 800, padding: '2px 8px', borderRadius: '12px' }}>
-                          ACTIVE
-                        </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <button
                           type="button"
-                          onClick={() => handleRemoveTeamMember(member._id)}
+                          onClick={() => handleToggleVolStatus(vol._id, vol.status)}
+                          style={{
+                            background: vol.status === 'ACTIVE' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                            color: vol.status === 'ACTIVE' ? '#4ADE80' : '#F87171',
+                            border: 'none',
+                            padding: '3px 8px',
+                            borderRadius: '10px',
+                            fontSize: '0.7rem',
+                            fontWeight: 800,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {vol.status === 'ACTIVE' ? 'ACTIVE' : 'DISABLED'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteVol(vol._id)}
                           style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#F87171', border: 'none', padding: '4px 8px', borderRadius: '8px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}
                         >
-                          Remove
+                          Delete
                         </button>
                       </div>
                     </div>
@@ -870,705 +1000,44 @@ const AdminControlCenter = () => {
               )}
             </div>
 
-            {/* Add Team Member Form */}
-            <form onSubmit={handleAddTeamMember} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {/* Add Volunteer Form */}
+            <form onSubmit={handleCreateVolunteerSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <input
-                type="email"
-                placeholder="Team Member KLU Email (@klu.ac.in)"
-                value={teamEmailInput}
-                onChange={(e) => setTeamEmailInput(e.target.value)}
+                type="text"
+                placeholder="Volunteer Name"
+                value={newVolForm.name}
+                onChange={(e) => setNewVolForm(prev => ({ ...prev, name: e.target.value }))}
                 required
                 style={{ padding: '8px 12px', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.85rem' }}
               />
               <input
-                type="text"
-                placeholder="Member Name (Optional)"
-                value={teamNameInput}
-                onChange={(e) => setTeamNameInput(e.target.value)}
+                type="email"
+                placeholder="Volunteer Email / Username"
+                value={newVolForm.email}
+                onChange={(e) => setNewVolForm(prev => ({ ...prev, email: e.target.value }))}
+                required
+                style={{ padding: '8px 12px', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.85rem' }}
+              />
+              <input
+                type="password"
+                placeholder="Set Volunteer Password"
+                value={newVolForm.password}
+                onChange={(e) => setNewVolForm(prev => ({ ...prev, password: e.target.value }))}
+                required
                 style={{ padding: '8px 12px', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.85rem' }}
               />
               <button
                 type="submit"
-                style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ADE80', border: '1px solid rgba(34, 197, 94, 0.4)', padding: '10px', borderRadius: '10px', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer' }}
+                style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38BDF8', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '10px', borderRadius: '10px', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer' }}
               >
-                + Add Attendance Team Member
+                + Add Volunteer Account
               </button>
             </form>
           </div>
 
-        </div>
-
-        {/* ==========================================================================
-           SEARCH, FILTER & ACTION BAR
-           ========================================================================== */}
-        <div style={{ background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '24px', padding: '24px 28px', marginBottom: '28px', boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: 900, color: '#FFFFFF', margin: 0, textTransform: 'uppercase', letterSpacing: '-0.01em' }}>
-              STUDENT REGISTRATION RECORDS <span style={{ color: '#94A3B8', fontSize: '0.9rem', fontWeight: 600 }}>({safeRegistrations.length} Total)</span>
-            </h3>
-          </div>
-
-          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '14px' }}>
-            <div style={{ position: 'relative', flex: '1 1 280px', minWidth: '240px' }}>
-              <Search size={18} color="#64748B" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
-              <input
-                type="text"
-                placeholder="Search by Participant ID, Name, Roll No..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{ width: '100%', padding: '10px 14px 10px 42px', borderRadius: '9999px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFFFFF', fontSize: '0.88rem', outline: 'none' }}
-              />
-            </div>
-
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ padding: '10px 16px', borderRadius: '9999px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#F8FAFC', fontSize: '0.88rem', fontWeight: 600 }}>
-              <option value="" style={{ background: '#0F172A' }}>Status: All</option>
-              <option value="PAYMENT_VERIFIED" style={{ background: '#0F172A' }}>Approved</option>
-              <option value="PAYMENT_SUBMITTED" style={{ background: '#0F172A' }}>Pending Verification</option>
-              <option value="REJECTED" style={{ background: '#0F172A' }}>Rejected</option>
-            </select>
-
-            <select value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)} style={{ padding: '10px 16px', borderRadius: '9999px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#F8FAFC', fontSize: '0.88rem', fontWeight: 600 }}>
-              <option value="" style={{ background: '#0F172A' }}>Dept: All</option>
-              <option value="CSE" style={{ background: '#0F172A' }}>CSE</option>
-              <option value="AI & DS" style={{ background: '#0F172A' }}>AI & DS</option>
-              <option value="IT" style={{ background: '#0F172A' }}>IT</option>
-              <option value="ECE" style={{ background: '#0F172A' }}>ECE</option>
-              <option value="EEE" style={{ background: '#0F172A' }}>EEE</option>
-              <option value="Mechanical" style={{ background: '#0F172A' }}>Mechanical</option>
-              <option value="Civil" style={{ background: '#0F172A' }}>Civil</option>
-            </select>
-
-            <select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} style={{ padding: '10px 16px', borderRadius: '9999px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#F8FAFC', fontSize: '0.88rem', fontWeight: 600 }}>
-              <option value="" style={{ background: '#0F172A' }}>Year: All</option>
-              <option value="1st Year" style={{ background: '#0F172A' }}>1st Year</option>
-              <option value="2nd Year" style={{ background: '#0F172A' }}>2nd Year</option>
-              <option value="3rd Year" style={{ background: '#0F172A' }}>3rd Year</option>
-              <option value="4th Year" style={{ background: '#0F172A' }}>4th Year</option>
-            </select>
-
-            <button onClick={() => setDirectRegOpen(true)} style={{ background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)', color: '#FFFFFF', border: 'none', padding: '10px 18px', borderRadius: '9999px', fontWeight: 700, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-              <Plus size={15} /> + DIRECT REGISTRATION
-            </button>
-
-            <button onClick={handleBulkVerify} style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ADE80', border: '1px solid rgba(34, 197, 94, 0.3)', padding: '10px 16px', borderRadius: '9999px', fontWeight: 700, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-              <CheckCircle2 size={15} /> VERIFY ALL
-            </button>
-
-            <button onClick={handleExportCSV} style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38BDF8', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '10px 16px', borderRadius: '9999px', fontWeight: 700, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-              <FileSpreadsheet size={15} /> Excel / CSV
-            </button>
-
-            <button onClick={handleDeleteAll} style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#F87171', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '10px 16px', borderRadius: '9999px', fontWeight: 700, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-              <Trash2 size={15} /> DELETE ALL
-            </button>
-          </div>
-        </div>
-
-        {/* ==========================================================================
-           STUDENT REGISTRATIONS DATA TABLE (Dark Glassmorphic Table)
-           ========================================================================== */}
-        <div style={{ background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '24px', padding: '24px', boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)', overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
-            <thead>
-              <tr style={{ borderBottom: '2px solid rgba(255, 255, 255, 0.1)', color: '#94A3B8', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                <th style={{ padding: '14px 16px' }}>PARTICIPANT ID</th>
-                <th style={{ padding: '14px 16px' }}>STUDENT DETAILS</th>
-                <th style={{ padding: '14px 16px' }}>REG NO</th>
-                <th style={{ padding: '14px 16px' }}>UPI / UTR TXN ID</th>
-                <th style={{ padding: '14px 16px' }}>DEPT / YEAR</th>
-                <th style={{ padding: '14px 16px' }}>PAYMENT PROOF</th>
-                <th style={{ padding: '14px 16px' }}>STATUS</th>
-                <th style={{ padding: '14px 16px' }}>SUBMITTED AT</th>
-                <th style={{ padding: '14px 16px', textAlign: 'center' }}>ACTIONS</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={9} style={{ textAlign: 'center', padding: '40px', color: '#94A3B8' }}>
-                    Loading participant records...
-                  </td>
-                </tr>
-              ) : safeRegistrations.length === 0 ? (
-                <tr>
-                  <td colSpan={9} style={{ textAlign: 'center', padding: '40px', color: '#94A3B8' }}>
-                    No student registrations found.
-                  </td>
-                </tr>
-              ) : (
-                safeRegistrations.map((reg, index) => {
-                  const rawProof = reg.payment?.upiScreenshotUrl || reg.payment?.screenshotUrl || reg.upiScreenshotUrl || reg.screenshotUrl || '';
-                  const isVerified = reg.status === 'PAYMENT_VERIFIED' || reg.paymentStatus === 'VERIFIED';
-                  const isRejected = reg.status === 'REJECTED' || reg.paymentStatus === 'REJECTED';
-
-                  const proofUrl = rawProof
-                    ? (rawProof.startsWith('http://') || rawProof.startsWith('https://') || rawProof.startsWith('data:'))
-                      ? rawProof
-                      : rawProof.startsWith('/')
-                        ? rawProof
-                        : `/${rawProof}`
-                    : '';
-
-                  return (
-                    <tr key={reg._id || index} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
-                      <td style={{ padding: '16px' }}>
-                        <span style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38BDF8', border: '1px solid rgba(56, 189, 248, 0.3)', fontWeight: 800, fontSize: '0.8rem', padding: '6px 12px', borderRadius: '9999px', display: 'inline-block' }}>
-                          {reg.registrationId}
-                        </span>
-                        <div style={{ fontSize: '0.72rem', color: '#64748B', marginTop: '2px' }}>#{index + 1}</div>
-                      </td>
-
-                      <td style={{ padding: '16px' }}>
-                        <div style={{ fontWeight: 800, color: '#FFFFFF', fontSize: '0.92rem' }}>{reg.fullName}</div>
-                        <div style={{ fontSize: '0.8rem', color: '#38BDF8', marginTop: '2px' }}>{reg.email}</div>
-                        <div style={{ fontSize: '0.78rem', color: '#94A3B8' }}>{reg.phone}</div>
-                      </td>
-
-                      <td style={{ padding: '16px', fontWeight: 800, fontFamily: 'monospace', color: '#F8FAFC' }}>
-                        {reg.studentId}
-                      </td>
-
-                      <td style={{ padding: '16px', fontWeight: 800, fontFamily: 'monospace', color: '#38BDF8' }}>
-                        {reg.payment?.transactionId || 'N/A'}
-                      </td>
-
-                      <td style={{ padding: '16px' }}>
-                        <div style={{ fontWeight: 700, color: '#F8FAFC' }}>{reg.department} ({reg.year})</div>
-                        <div style={{ fontSize: '0.78rem', color: '#94A3B8' }}>Sec: <strong style={{ color: '#FFF' }}>{reg.section || '24S01'}</strong> • {reg.residency || 'Day Scholar'}</div>
-                      </td>
-
-                      <td style={{ padding: '16px' }}>
-                        {proofUrl ? (
-                          <div
-                            onClick={() => setSelectedReg(reg)}
-                            title="Click to view payment proof"
-                            style={{
-                              width: '42px',
-                              height: '42px',
-                              borderRadius: '50%',
-                              overflow: 'hidden',
-                              border: '2px solid #38BDF8',
-                              cursor: 'pointer',
-                              background: '#000',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center'
-                            }}
-                          >
-                            <img
-                              src={proofUrl}
-                              alt="Payment Proof"
-                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                                if (e.target.parentNode) {
-                                  e.target.parentNode.innerHTML = '<span style="font-size:0.65rem;color:#38BDF8;font-weight:800;">PROOF</span>';
-                                }
-                              }}
-                            />
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => setSelectedReg(reg)}
-                            title="Click to review/attach payment proof"
-                            style={{
-                              background: 'rgba(56, 189, 248, 0.12)',
-                              border: '1px solid rgba(56, 189, 248, 0.3)',
-                              color: '#38BDF8',
-                              fontSize: '0.75rem',
-                              fontWeight: 700,
-                              padding: '6px 12px',
-                              borderRadius: '8px',
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px'
-                            }}
-                          >
-                            <Eye size={13} /> View Proof
-                          </button>
-                        )}
-                      </td>
-
-                      <td style={{ padding: '16px' }}>
-                        <span style={{ background: isVerified ? 'rgba(34, 197, 94, 0.15)' : isRejected ? 'rgba(239, 68, 68, 0.15)' : 'rgba(249, 115, 22, 0.15)', color: isVerified ? '#4ADE80' : isRejected ? '#F87171' : '#FB923C', border: isVerified ? '1px solid rgba(34, 197, 94, 0.3)' : isRejected ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(249, 115, 22, 0.3)', fontWeight: 800, fontSize: '0.78rem', padding: '5px 12px', borderRadius: '9999px', display: 'inline-block' }}>
-                          {isVerified ? 'Approved' : isRejected ? 'Rejected' : 'Pending'}
-                        </span>
-                      </td>
-
-                      <td style={{ padding: '16px', color: '#94A3B8', fontSize: '0.8rem' }}>
-                        {new Date(reg.createdAt).toLocaleDateString()}<br />
-                        <span style={{ fontSize: '0.75rem', color: '#64748B' }}>
-                          {new Date(reg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </td>
-
-                      <td style={{ padding: '16px', textAlign: 'center' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                          <button onClick={() => setSelectedReg(reg)} title="Review Payment" style={{ background: 'rgba(56, 189, 248, 0.15)', border: '1px solid rgba(56, 189, 248, 0.3)', color: '#38BDF8', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <CheckCircle2 size={16} />
-                          </button>
-                          <button onClick={() => handleDeleteRegistration(reg.registrationId || reg._id)} title="Delete Record" style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#F87171', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
         </div>
 
       </div>
-
-      {/* ==========================================================================
-         MODAL 1: PAYMENT APPROVAL & CLOUDINARY RECEIPT PREVIEW
-         ========================================================================== */}
-      {selectedReg && (
-        <PaymentApprovalModal
-          isOpen={!!selectedReg}
-          onClose={() => setSelectedReg(null)}
-          registrationItem={selectedReg}
-          onRefresh={fetchAllData}
-        />
-      )}
-
-      {/* ==========================================================================
-         MODAL 2: VENUE QR SCANNER
-         ========================================================================== */}
-      {qrModalOpen && (
-        <QRScannerModal
-          isOpen={qrModalOpen}
-          onClose={() => setQrModalOpen(false)}
-          onCheckInSuccess={fetchAllData}
-        />
-      )}
-
-      {/* ==========================================================================
-         MODAL 3: ATTENDANCE SESSIONS MODAL (Dark Theme)
-         ========================================================================== */}
-      {attendanceModalOpen && (
-        <div className="modal-overlay" style={{ zIndex: 9999, background: 'rgba(0, 0, 0, 0.8)', backdropFilter: 'blur(8px)' }}>
-          <div className="modal-content" style={{ maxWidth: '1000px', width: '95%', borderRadius: '28px', background: '#0F172A', border: '1px solid rgba(255, 255, 255, 0.12)', color: '#F8FAFC', padding: '32px', maxHeight: '90vh', overflowY: 'auto' }}>
-            
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-              <div>
-                <h2 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#FFFFFF', margin: 0, textTransform: 'uppercase' }}>
-                  ATTENDANCE SYSTEM
-                </h2>
-                <p style={{ color: '#94A3B8', fontSize: '0.88rem', margin: '4px 0 0 0' }}>
-                  Scan venue QR codes or manually mark student attendance records.
-                </p>
-              </div>
-              <button onClick={() => setAttendanceModalOpen(false)} style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '50%', width: '38px', height: '38px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <X size={20} color="#94A3B8" />
-              </button>
-            </div>
-
-            {/* Top Grid: Left Camera Scan Box + Right Search & Stats Box */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', marginBottom: '24px' }}>
-              
-              {/* Left Box: Camera Live View */}
-              <div style={{ background: '#0B132B', borderRadius: '20px', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '20px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#38BDF8', textTransform: 'uppercase' }}>
-                    Integrated Camera Scanner
-                  </span>
-                  <button
-                    onClick={() => setCameraPaused(!cameraPaused)}
-                    style={{ background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#FFF', padding: '4px 12px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
-                  >
-                    {cameraPaused ? 'Resume Camera' : 'Pause Camera'}
-                  </button>
-                </div>
-
-                <div style={{ background: '#020617', height: '180px', borderRadius: '14px', border: '1px solid rgba(56, 189, 248, 0.2)', overflow: 'hidden', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF' }}>
-                  <Camera size={48} color="#38BDF8" style={{ opacity: 0.8 }} />
-                  <div style={{ position: 'absolute', bottom: '10px', left: '10px', right: '10px', background: 'rgba(0,0,0,0.75)', padding: '6px', borderRadius: '8px', fontSize: '0.72rem', color: '#94A3B8', textAlign: 'center' }}>
-                    Continuously decodes QR codes • 2.5s Cool-Down Protection
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Box: Search, Mark & Live Stats */}
-              <div style={{ background: '#0B132B', borderRadius: '20px', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '20px' }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#38BDF8', textTransform: 'uppercase', display: 'block', marginBottom: '10px' }}>
-                  BARCODE / REG NO SEARCH
-                </span>
-
-                <form onSubmit={handleManualMarkSubmit} style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-                  <input
-                    type="text"
-                    placeholder="Type or scan Reg No / QR payload..."
-                    value={manualScanInput}
-                    onChange={(e) => setManualScanInput(e.target.value)}
-                    style={{ flex: 1, padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0F172A', color: '#FFF', fontSize: '0.88rem' }}
-                  />
-                  <button type="submit" style={{ background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)', color: '#FFF', border: 'none', padding: '10px 18px', borderRadius: '12px', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer' }}>
-                    MARK
-                  </button>
-                </form>
-
-                {/* Stats Bar */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', textAlign: 'center', marginBottom: '16px', background: '#0F172A', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '12px', borderRadius: '14px' }}>
-                  <div>
-                    <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase' }}>PRESENT</div>
-                    <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#4ADE80' }}>{presentCount}</div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase' }}>ABSENT</div>
-                    <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#F87171' }}>{absentCount}</div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase' }}>RATE</div>
-                    <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#38BDF8' }}>{attendanceRate}%</div>
-                  </div>
-                </div>
-
-                {/* Filter Tabs */}
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button onClick={() => setAttendanceTab('PRESENT')} style={{ flex: 1, padding: '6px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800, border: 'none', cursor: 'pointer', background: attendanceTab === 'PRESENT' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(255,255,255,0.05)', color: attendanceTab === 'PRESENT' ? '#4ADE80' : '#94A3B8' }}>
-                    PRESENT ({presentCount})
-                  </button>
-                  <button onClick={() => setAttendanceTab('ABSENT')} style={{ flex: 1, padding: '6px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800, border: 'none', cursor: 'pointer', background: attendanceTab === 'ABSENT' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255,255,255,0.05)', color: attendanceTab === 'ABSENT' ? '#F87171' : '#94A3B8' }}>
-                    ABSENT ({absentCount})
-                  </button>
-                  <button onClick={() => setAttendanceTab('ALL')} style={{ flex: 1, padding: '6px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800, border: 'none', cursor: 'pointer', background: attendanceTab === 'ALL' ? 'rgba(56, 189, 248, 0.2)' : 'rgba(255,255,255,0.05)', color: attendanceTab === 'ALL' ? '#38BDF8' : '#94A3B8' }}>
-                    ALL ({registrations.length})
-                  </button>
-                </div>
-              </div>
-
-            </div>
-
-            {/* Bottom Table: SESSION PARTICIPANT ROSTER */}
-            <div style={{ background: '#0B132B', borderRadius: '20px', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '20px' }}>
-              <h4 style={{ fontSize: '1rem', fontWeight: 900, color: '#FFFFFF', marginBottom: '14px', textTransform: 'uppercase' }}>
-                SESSION PARTICIPANT ROSTER
-              </h4>
-
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
-                <thead>
-                  <tr style={{ borderBottom: '2px solid rgba(255, 255, 255, 0.1)', color: '#94A3B8', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase' }}>
-                    <th style={{ padding: '10px 12px' }}>STUDENT NAME</th>
-                    <th style={{ padding: '10px 12px' }}>REG NUMBER</th>
-                    <th style={{ padding: '10px 12px' }}>DEPT / YEAR</th>
-                    <th style={{ padding: '10px 12px', textAlign: 'center' }}>ATTENDANCE STATUS</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredAttendanceRoster.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} style={{ textAlign: 'center', padding: '24px', color: '#64748B' }}>
-                        No participants found for this filter.
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredAttendanceRoster.map((r, i) => (
-                      <tr key={r._id || i} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
-                        <td style={{ padding: '12px', fontWeight: 800, color: '#FFFFFF' }}>
-                          {r.fullName}<br />
-                          <span style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 400 }}>{r.email}</span>
-                        </td>
-                        <td style={{ padding: '12px', fontFamily: 'monospace', fontWeight: 800, color: '#38BDF8' }}>
-                          {r.studentId}
-                        </td>
-                        <td style={{ padding: '12px', color: '#CBD5E1', fontWeight: 600 }}>
-                          {r.department} ({r.year})
-                        </td>
-                        <td style={{ padding: '12px', textAlign: 'center' }}>
-                          <button
-                            onClick={() => handleToggleAttendance(r.registrationId, r.attendance)}
-                            style={{
-                              background: r.attendance ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-                              color: r.attendance ? '#4ADE80' : '#F87171',
-                              border: r.attendance ? '1px solid rgba(34, 197, 94, 0.4)' : '1px solid rgba(239, 68, 68, 0.4)',
-                              padding: '6px 16px',
-                              borderRadius: '9999px',
-                              fontWeight: 800,
-                              fontSize: '0.78rem',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            {r.attendance ? '✓ PRESENT' : '✗ ABSENT'}
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-          </div>
-        </div>
-      )}
-
-      {/* ==========================================================================
-         MODAL 4: EVENT SETTINGS MODAL (Dark Website Theme)
-         ========================================================================== */}
-      {settingsOpen && (
-        <div className="modal-overlay" style={{ zIndex: 9999, background: 'rgba(0, 0, 0, 0.8)', backdropFilter: 'blur(8px)' }}>
-          <div className="modal-content" style={{ maxWidth: '640px', width: '95%', borderRadius: '28px', background: '#0F172A', border: '1px solid rgba(255, 255, 255, 0.12)', color: '#F8FAFC', padding: '32px', maxHeight: '90vh', overflowY: 'auto' }}>
-            
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <div>
-                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#38BDF8', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                  🔒 PERMANENT / READ-ONLY CONFIG
-                </span>
-                <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#FFFFFF', margin: '4px 0 0 0' }}>
-                  EVENT SETTINGS
-                </h3>
-              </div>
-              <button onClick={() => setSettingsOpen(false)} style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <X size={18} color="#94A3B8" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveSettings}>
-              {/* Event Name */}
-              <div style={{ marginBottom: '14px' }}>
-                <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#94A3B8', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>
-                  EVENT NAME
-                </label>
-                <input
-                  type="text"
-                  value={eventSettings.eventName}
-                  onChange={(e) => setEventSettings({ ...eventSettings, eventName: e.target.value })}
-                  style={{ width: '100%', padding: '12px 14px', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', fontSize: '0.9rem', fontWeight: 700, color: '#FFFFFF' }}
-                />
-              </div>
-
-              {/* Group / Organized By + Event Date */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
-                <div>
-                  <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#94A3B8', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>
-                    GROUP / ORGANIZED BY
-                  </label>
-                  <input
-                    type="text"
-                    value={eventSettings.organizedBy}
-                    onChange={(e) => setEventSettings({ ...eventSettings, organizedBy: e.target.value })}
-                    style={{ width: '100%', padding: '12px 14px', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.88rem', fontWeight: 600 }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#94A3B8', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>
-                    EVENT DATE
-                  </label>
-                  <input
-                    type="text"
-                    value={eventSettings.eventDate}
-                    onChange={(e) => setEventSettings({ ...eventSettings, eventDate: e.target.value })}
-                    style={{ width: '100%', padding: '12px 14px', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.88rem', fontWeight: 600 }}
-                  />
-                </div>
-              </div>
-
-              {/* Venue + Fee */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
-                <div>
-                  <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#94A3B8', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>
-                    VENUE
-                  </label>
-                  <input
-                    type="text"
-                    value={eventSettings.venue}
-                    onChange={(e) => setEventSettings({ ...eventSettings, venue: e.target.value })}
-                    style={{ width: '100%', padding: '12px 14px', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.88rem', fontWeight: 600 }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#94A3B8', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>
-                    REGISTRATION FEE (₹)
-                  </label>
-                  <input
-                    type="number"
-                    value={eventSettings.fee}
-                    onChange={(e) => setEventSettings({ ...eventSettings, fee: parseInt(e.target.value) || 300 })}
-                    style={{ width: '100%', padding: '12px 14px', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.88rem', fontWeight: 800 }}
-                  />
-                </div>
-              </div>
-
-              {/* Official UPI VPA ID */}
-              <div style={{ marginBottom: '14px' }}>
-                <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#94A3B8', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>
-                  OFFICIAL UPI VPA ID
-                </label>
-                <input
-                  type="text"
-                  value={eventSettings.upiId}
-                  onChange={(e) => setEventSettings({ ...eventSettings, upiId: e.target.value })}
-                  style={{ width: '100%', padding: '12px 14px', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', fontSize: '0.88rem', fontWeight: 700, color: '#38BDF8' }}
-                />
-              </div>
-
-              {/* Volunteer Passcode */}
-              <div style={{ marginBottom: '14px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                  <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase' }}>
-                    VOLUNTEER 6-DIGIT PASSCODE
-                  </label>
-                  <span style={{ fontSize: '0.7rem', color: '#38BDF8', fontWeight: 700 }}>
-                    USED FOR URL/ATTEND VOLUNTEER SCANNER ACCESS
-                  </span>
-                </div>
-                <input
-                  type="text"
-                  value={eventSettings.volunteerPasscode}
-                  onChange={(e) => setEventSettings({ ...eventSettings, volunteerPasscode: e.target.value })}
-                  style={{ width: '100%', padding: '12px 14px', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '1rem', fontWeight: 900, fontFamily: 'monospace', letterSpacing: '0.1em' }}
-                />
-              </div>
-
-              {/* Maximum Spots */}
-              <div style={{ marginBottom: '18px' }}>
-                <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#94A3B8', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>
-                  MAXIMUM SPOTS
-                </label>
-                <input
-                  type="number"
-                  value={eventSettings.maxSpots}
-                  onChange={(e) => setEventSettings({ ...eventSettings, maxSpots: parseInt(e.target.value) || 200 })}
-                  style={{ width: '100%', padding: '12px 14px', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.95rem', fontWeight: 800 }}
-                />
-              </div>
-
-              {/* Registration Status Toggle Bar */}
-              <div style={{ background: '#0B132B', borderRadius: '16px', padding: '14px 20px', marginBottom: '24px', border: '1px solid rgba(255, 255, 255, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#FFFFFF' }}>Registration Status</div>
-                  <div style={{ fontSize: '0.75rem', color: '#94A3B8' }}>Toggle to manually open or close student registrations</div>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleToggleStatus}
-                  style={{
-                    background: eventSettings.registrationOpen ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                    color: eventSettings.registrationOpen ? '#4ADE80' : '#F87171',
-                    border: eventSettings.registrationOpen ? '1px solid rgba(34, 197, 94, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)',
-                    padding: '8px 18px',
-                    borderRadius: '9999px',
-                    fontWeight: 800,
-                    fontSize: '0.8rem',
-                    cursor: 'pointer'
-                  }}
-                >
-                  STATUS: {eventSettings.registrationOpen ? 'OPEN' : 'CLOSED'}
-                </button>
-              </div>
-
-              {/* Action Buttons */}
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                <button
-                  type="button"
-                  onClick={() => setSettingsOpen(false)}
-                  style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#94A3B8', padding: '12px 24px', borderRadius: '9999px', fontWeight: 700, cursor: 'pointer' }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  style={{ background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)', color: '#FFFFFF', border: 'none', padding: '12px 32px', borderRadius: '9999px', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer', boxShadow: '0 4px 14px rgba(249, 115, 22, 0.35)' }}
-                >
-                  Save Configuration
-                </button>
-              </div>
-            </form>
-
-          </div>
-        </div>
-      )}
-
-      {/* ==========================================================================
-         MODAL 5: DIRECT REGISTRATION MODAL
-         ========================================================================== */}
-      {directRegOpen && (
-        <div className="modal-overlay" style={{ zIndex: 9999, background: 'rgba(0, 0, 0, 0.8)', backdropFilter: 'blur(8px)' }}>
-          <div className="modal-content" style={{ maxWidth: '520px', borderRadius: '24px', background: '#0F172A', border: '1px solid rgba(255, 255, 255, 0.12)', color: '#F8FAFC', padding: '28px' }}>
-            <button onClick={() => setDirectRegOpen(false)} style={{ position: 'absolute', top: '20px', right: '20px', background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer' }}>
-              <X size={24} />
-            </button>
-
-            <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#FFFFFF', marginBottom: '4px' }}>
-              Direct Student Registration
-            </h3>
-            <p style={{ color: '#94A3B8', fontSize: '0.85rem', marginBottom: '20px' }}>
-              Bypass Google Sign-In & Payment verification for offline / spot registration.
-            </p>
-
-            {directFormError && (
-              <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#F87171', padding: '10px', borderRadius: '8px', marginBottom: '16px', fontSize: '0.85rem' }}>
-                {directFormError}
-              </div>
-            )}
-
-            <form onSubmit={handleDirectSubmit}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                <div>
-                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#CBD5E1', display: 'block', marginBottom: '4px' }}>Full Name *</label>
-                  <input type="text" required value={directForm.fullName} onChange={(e) => setDirectForm({ ...directForm, fullName: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.88rem' }} />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#CBD5E1', display: 'block', marginBottom: '4px' }}>Email Address *</label>
-                  <input type="email" required value={directForm.email} onChange={(e) => setDirectForm({ ...directForm, email: e.target.value })} placeholder="student@klu.ac.in" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.88rem' }} />
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                <div>
-                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#CBD5E1', display: 'block', marginBottom: '4px' }}>Student Roll No / ID *</label>
-                  <input type="text" required value={directForm.studentId} onChange={(e) => setDirectForm({ ...directForm, studentId: e.target.value })} placeholder="e.g. 2400030123" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.88rem' }} />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#CBD5E1', display: 'block', marginBottom: '4px' }}>Phone Number *</label>
-                  <input type="tel" required value={directForm.phone} onChange={(e) => setDirectForm({ ...directForm, phone: e.target.value })} placeholder="9876543210" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.88rem' }} />
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '20px' }}>
-                <div>
-                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#CBD5E1', display: 'block', marginBottom: '4px' }}>Dept</label>
-                  <select value={directForm.department} onChange={(e) => setDirectForm({ ...directForm, department: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.85rem' }}>
-                    <option value="CSE" style={{ background: '#0F172A' }}>CSE</option>
-                    <option value="AI & DS" style={{ background: '#0F172A' }}>AI & DS</option>
-                    <option value="IT" style={{ background: '#0F172A' }}>IT</option>
-                    <option value="ECE" style={{ background: '#0F172A' }}>ECE</option>
-                    <option value="EEE" style={{ background: '#0F172A' }}>EEE</option>
-                    <option value="Mechanical" style={{ background: '#0F172A' }}>Mechanical</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#CBD5E1', display: 'block', marginBottom: '4px' }}>Year</label>
-                  <select value={directForm.year} onChange={(e) => setDirectForm({ ...directForm, year: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.85rem' }}>
-                    <option value="1st Year" style={{ background: '#0F172A' }}>1st Year</option>
-                    <option value="2nd Year" style={{ background: '#0F172A' }}>2nd Year</option>
-                    <option value="3rd Year" style={{ background: '#0F172A' }}>3rd Year</option>
-                    <option value="4th Year" style={{ background: '#0F172A' }}>4th Year</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#CBD5E1', display: 'block', marginBottom: '4px' }}>Section</label>
-                  <input type="text" value={directForm.section} onChange={(e) => setDirectForm({ ...directForm, section: e.target.value })} placeholder="24S01" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.15)', background: '#0B132B', color: '#FFF', fontSize: '0.85rem' }} />
-                </div>
-              </div>
-
-              <button type="submit" disabled={directFormLoading} style={{ width: '100%', background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)', color: '#FFFFFF', border: 'none', padding: '14px', borderRadius: '12px', fontWeight: 800, fontSize: '0.95rem', cursor: 'pointer', boxShadow: '0 4px 14px rgba(249, 115, 22, 0.35)' }}>
-                {directFormLoading ? 'Processing Registration...' : 'Complete & Confirm Spot (₹300 Paid)'}
-              </button>
-            </form>
-
-          </div>
-        </div>
-      )}
-
     </div>
   );
 };
