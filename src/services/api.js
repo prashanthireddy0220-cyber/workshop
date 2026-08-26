@@ -64,14 +64,8 @@ export const getMyRegistration = () => api.get('/registrations/me');
 export const getRegistrationById = (id) => api.get(`/registrations/${id}`);
 
 // Payment Services
-export const submitPayment = (formData) =>
-  api.post('/payments/submit', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  });
-export const uploadPaymentScreenshotApi = (formData) =>
-  api.post('/payments/upload-screenshot', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  });
+export const submitPayment = (formData) => api.post('/payments/submit', formData);
+export const uploadPaymentScreenshotApi = (formData) => api.post('/payments/upload-screenshot', formData);
 export const getPayment = (registrationId) => api.get(`/payments/${registrationId}`);
 
 // Admin Services

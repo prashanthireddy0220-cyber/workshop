@@ -807,6 +807,63 @@ const AdminControlCenter = () => {
                     gap: '6px'
                   }}
                 >
+                  <td style={{ padding: '16px', fontWeight: 800, fontFamily: 'monospace', color: (reg.payment?.transactionId && reg.payment.transactionId.length === 12) ? '#38BDF8' : '#94A3B8' }}>
+                        {(reg.payment?.transactionId && reg.payment.transactionId.length === 12) ? reg.payment.transactionId : (reg.payment?.transactionId || 'Not Submitted')}
+                      </td>
+
+                      <td style={{ padding: '16px' }}>
+                        <div style={{ fontWeight: 700, color: '#F8FAFC' }}>{reg.department} ({reg.year})</div>
+                        <div style={{ fontSize: '0.78rem', color: '#94A3B8' }}>Sec: <strong style={{ color: '#FFF' }}>{reg.section || '24S01'}</strong> • {reg.residency || 'Day Scholar'}</div>
+                      </td>
+
+                      <td style={{ padding: '16px' }}>
+                        {proofUrl ? (
+                          <div
+                            onClick={() => setSelectedReg(reg)}
+                            title="Click to view payment proof"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              background: 'rgba(56, 189, 248, 0.12)',
+                              border: '1px solid rgba(56, 189, 248, 0.35)',
+                              color: '#38BDF8',
+                              fontSize: '0.78rem',
+                              fontWeight: 700,
+                              padding: '5px 10px',
+                              borderRadius: '10px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <img
+                              src={proofUrl}
+                              alt="Payment Proof"
+                              style={{ width: '20px', height: '20px', borderRadius: '4px', objectFit: 'cover' }}
+                              onError={(e) => { e.target.style.display = 'none'; }}
+                            />
+                            <span>View Proof</span>
+                          </div>
+                        ) : (
+                          <span style={{ fontSize: '0.78rem', color: '#94A3B8', fontStyle: 'italic', fontWeight: 600 }}>
+                            Not Uploaded
+                          </span>
+                        )}
+                      </td>
+
+                      <td style={{ padding: '16px' }}>
+                        <span style={{
+                          background: isVerified ? 'rgba(34, 197, 94, 0.15)' : isRejected ? 'rgba(239, 68, 68, 0.15)' : proofUrl ? 'rgba(249, 115, 22, 0.15)' : 'rgba(148, 163, 184, 0.15)',
+                          color: isVerified ? '#4ADE80' : isRejected ? '#F87171' : proofUrl ? '#FB923C' : '#94A3B8',
+                          border: isVerified ? '1px solid rgba(34, 197, 94, 0.3)' : isRejected ? '1px solid rgba(239, 68, 68, 0.3)' : proofUrl ? '1px solid rgba(249, 115, 22, 0.3)' : '1px solid rgba(148, 163, 184, 0.3)',
+                          fontWeight: 800,
+                          fontSize: '0.78rem',
+                          padding: '5px 12px',
+                          borderRadius: '9999px',
+                          display: 'inline-block'
+                        }}>
+                          {isVerified ? 'Approved' : isRejected ? 'Rejected' : proofUrl ? 'Proof Submitted' : 'Pending Payment'}
+                        </span>
+                      </td>
                   {registrationOpenState ? <Unlock size={14} /> : <Lock size={14} />}
                   REGISTRATION: {registrationOpenState ? 'ON (OPEN)' : 'OFF (CLOSED)'}
                 </button>

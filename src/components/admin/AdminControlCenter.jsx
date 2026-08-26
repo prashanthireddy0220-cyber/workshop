@@ -1175,8 +1175,8 @@ const AdminControlCenter = () => {
                         {reg.studentId}
                       </td>
 
-                      <td style={{ padding: '16px', fontWeight: 800, fontFamily: 'monospace', color: '#38BDF8' }}>
-                        {reg.payment?.transactionId || 'N/A'}
+                      <td style={{ padding: '16px', fontWeight: 800, fontFamily: 'monospace', color: (reg.payment?.transactionId && reg.payment.transactionId.length === 12) ? '#38BDF8' : '#94A3B8' }}>
+                        {(reg.payment?.transactionId && reg.payment.transactionId.length === 12) ? reg.payment.transactionId : (reg.payment?.transactionId || 'Not Submitted')}
                       </td>
 
                       <td style={{ padding: '16px' }}>
@@ -1190,56 +1190,46 @@ const AdminControlCenter = () => {
                             onClick={() => setSelectedReg(reg)}
                             title="Click to view payment proof"
                             style={{
-                              width: '42px',
-                              height: '42px',
-                              borderRadius: '50%',
-                              overflow: 'hidden',
-                              border: '2px solid #38BDF8',
-                              cursor: 'pointer',
-                              background: '#000',
-                              display: 'flex',
+                              display: 'inline-flex',
                               alignItems: 'center',
-                              justifyContent: 'center'
+                              gap: '6px',
+                              background: 'rgba(56, 189, 248, 0.12)',
+                              border: '1px solid rgba(56, 189, 248, 0.35)',
+                              color: '#38BDF8',
+                              fontSize: '0.78rem',
+                              fontWeight: 700,
+                              padding: '5px 10px',
+                              borderRadius: '10px',
+                              cursor: 'pointer'
                             }}
                           >
                             <img
                               src={proofUrl}
                               alt="Payment Proof"
-                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                                if (e.target.parentNode) {
-                                  e.target.parentNode.innerHTML = '<span style="font-size:0.65rem;color:#38BDF8;font-weight:800;">PROOF</span>';
-                                }
-                              }}
+                              style={{ width: '20px', height: '20px', borderRadius: '4px', objectFit: 'cover' }}
+                              onError={(e) => { e.target.style.display = 'none'; }}
                             />
+                            <span>View Proof</span>
                           </div>
                         ) : (
-                          <button
-                            onClick={() => setSelectedReg(reg)}
-                            title="Click to review/attach payment proof"
-                            style={{
-                              background: 'rgba(56, 189, 248, 0.12)',
-                              border: '1px solid rgba(56, 189, 248, 0.3)',
-                              color: '#38BDF8',
-                              fontSize: '0.75rem',
-                              fontWeight: 700,
-                              padding: '6px 12px',
-                              borderRadius: '8px',
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px'
-                            }}
-                          >
-                            <Eye size={13} /> View Proof
-                          </button>
+                          <span style={{ fontSize: '0.78rem', color: '#94A3B8', fontStyle: 'italic', fontWeight: 600 }}>
+                            Not Uploaded
+                          </span>
                         )}
                       </td>
 
                       <td style={{ padding: '16px' }}>
-                        <span style={{ background: isVerified ? 'rgba(34, 197, 94, 0.15)' : isRejected ? 'rgba(239, 68, 68, 0.15)' : 'rgba(249, 115, 22, 0.15)', color: isVerified ? '#4ADE80' : isRejected ? '#F87171' : '#FB923C', border: isVerified ? '1px solid rgba(34, 197, 94, 0.3)' : isRejected ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(249, 115, 22, 0.3)', fontWeight: 800, fontSize: '0.78rem', padding: '5px 12px', borderRadius: '9999px', display: 'inline-block' }}>
-                          {isVerified ? 'Approved' : isRejected ? 'Rejected' : 'Pending'}
+                        <span style={{
+                          background: isVerified ? 'rgba(34, 197, 94, 0.15)' : isRejected ? 'rgba(239, 68, 68, 0.15)' : proofUrl ? 'rgba(249, 115, 22, 0.15)' : 'rgba(148, 163, 184, 0.15)',
+                          color: isVerified ? '#4ADE80' : isRejected ? '#F87171' : proofUrl ? '#FB923C' : '#94A3B8',
+                          border: isVerified ? '1px solid rgba(34, 197, 94, 0.3)' : isRejected ? '1px solid rgba(239, 68, 68, 0.3)' : proofUrl ? '1px solid rgba(249, 115, 22, 0.3)' : '1px solid rgba(148, 163, 184, 0.3)',
+                          fontWeight: 800,
+                          fontSize: '0.78rem',
+                          padding: '5px 12px',
+                          borderRadius: '9999px',
+                          display: 'inline-block'
+                        }}>
+                          {isVerified ? 'Approved' : isRejected ? 'Rejected' : proofUrl ? 'Proof Submitted' : 'Pending Payment'}
                         </span>
                       </td>
 
