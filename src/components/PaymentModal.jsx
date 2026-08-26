@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { submitPayment } from '../services/api';
-import { X, Upload, CheckCircle, AlertCircle, QrCode, Shield, FileText } from 'lucide-react';
+import { submitPayment, uploadPaymentScreenshotApi } from '../services/api';
+import { X, Upload, CheckCircle, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 
 const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
   const { refreshRegistration } = useAuth();
@@ -12,40 +12,71 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const [uploadStatus, setUploadStatus] = useState('IDLE'); // 'IDLE' | 'UPLOADING' | 'SUCCESS' | 'ERROR'
+  const [uploadedUrl, setUploadedUrl] = useState('');
+  const [uploadedPublicId, setUploadedPublicId] = useState('');
+  const [uploadError, setUploadError] = useState('');
+
   if (!isOpen) return null;
 
   const handleTransactionIdChange = (e) => {
-    // Only numeric digits, max 12 digits
     const cleanVal = e.target.value.replace(/\D/g, '').slice(0, 12);
     setTransactionId(cleanVal);
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const selectedFile = e.target.files[0];
-    if (selectedFile) {
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-      if (!allowedTypes.includes(selectedFile.type)) {
-        setError('Invalid image type. Only JPEG, JPG, PNG, and WebP images are allowed.');
-        return;
+    if (!selectedFile) return;
+
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(selectedFile.type)) {
+      setUploadStatus('ERROR');
+      setUploadError('Invalid image type. Only JPEG, JPG, PNG, and WebP images are allowed.');
+      return;
+    }
+    if (selectedFile.size > 5 * 1024 * 1024) {
+      setUploadStatus('ERROR');
+      setUploadError('Image size must be 5 MB or less.');
+      return;
+    }
+
+    setFile(selectedFile);
+    setPreviewUrl(URL.createObjectURL(selectedFile));
+    setUploadStatus('UPLOADING');
+    setUploadError('');
+    setError('');
+
+    try {
+      const uploadData = new FormData();
+      uploadData.append('screenshot', selectedFile);
+
+      const res = await uploadPaymentScreenshotApi(uploadData);
+      if (res.data.success && (res.data.url || res.data.secure_url)) {
+        const cUrl = res.data.url || res.data.secure_url;
+        setUploadedUrl(cUrl);
+        setUploadedPublicId(res.data.publicId || '');
+        setUploadStatus('SUCCESS');
+        setUploadError('');
+      } else {
+        setUploadStatus('ERROR');
+        setUploadError(res.data.message || 'Failed to upload payment screenshot. Please try again.');
+        setUploadedUrl('');
       }
-      if (selectedFile.size > 5 * 1024 * 1024) {
-        setError('Image size must be 5 MB or less.');
-        return;
-      }
-      setFile(selectedFile);
-      setPreviewUrl(URL.createObjectURL(selectedFile));
-      setError('');
+    } catch (err) {
+      console.error('[Cloudinary Upload Error]', err);
+      setUploadStatus('ERROR');
+      setUploadError(err.response?.data?.message || 'Failed to upload payment screenshot. Please try again.');
+      setUploadedUrl('');
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!file) {
-      setError('Please upload your payment screenshot proof first.');
+    if (uploadStatus !== 'SUCCESS' || !uploadedUrl) {
+      setError('Please upload your payment screenshot proof to Cloudinary first.');
       return;
     }
     
-    // Validate exact 12-digit UTR
     const utr = transactionId ? transactionId.trim() : '';
     if (!utr || utr.length !== 12 || !/^\d{12}$/.test(utr)) {
       setError('UPI Reference / UTR Number must be exactly 12 numeric digits (e.g. 123456789012).');
@@ -60,7 +91,11 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
       formData.append('registrationId', registrationId);
       formData.append('transactionId', utr);
       formData.append('amount', 250);
-      formData.append('screenshot', file);
+      formData.append('screenshotUrl', uploadedUrl);
+
+      if (file) {
+        formData.append('screenshot', file);
+      }
 
       const res = await submitPayment(formData);
       if (res.data.success) {
@@ -74,6 +109,13 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
       setLoading(false);
     }
   };
+
+  const isSubmitAllowed =
+    uploadStatus === 'SUCCESS' &&
+    uploadedUrl &&
+    transactionId.length === 12 &&
+    /^\d{12}$/.test(transactionId) &&
+    !loading;
 
   return (
     <div className="modal-overlay">
@@ -114,7 +156,6 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
           alignItems: 'center',
           flexWrap: 'wrap'
         }}>
-          {/* UPI QR Code */}
           <div style={{
             background: '#FFF',
             padding: '8px',
@@ -175,7 +216,12 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
             </label>
             
             <div style={{
-              border: '2px dashed rgba(249, 115, 22, 0.35)',
+              border: `2px dashed ${
+                uploadStatus === 'SUCCESS' ? 'rgba(52, 211, 153, 0.6)' :
+                uploadStatus === 'ERROR' ? 'rgba(239, 68, 68, 0.6)' :
+                uploadStatus === 'UPLOADING' ? 'rgba(56, 189, 248, 0.6)' :
+                'rgba(249, 115, 22, 0.4)'
+              }`,
               borderRadius: '14px',
               padding: '20px',
               textAlign: 'center',
@@ -187,7 +233,6 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 onChange={handleFileChange}
-                required
                 style={{
                   position: 'absolute',
                   top: 0,
@@ -199,16 +244,41 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
                 }}
               />
 
-              {previewUrl ? (
+              {uploadStatus === 'UPLOADING' ? (
+                <div style={{ padding: '10px 0' }}>
+                  <Loader2 size={32} color="#38BDF8" className="animate-spin" style={{ margin: '0 auto 8px auto', display: 'block' }} />
+                  <p style={{ color: '#38BDF8', fontSize: '0.9rem', fontWeight: 700 }}>
+                    Uploading payment screenshot to Cloudinary...
+                  </p>
+                  <p style={{ color: '#94A3B8', fontSize: '0.78rem', marginTop: '2px' }}>
+                    Please wait, validating image on server...
+                  </p>
+                </div>
+              ) : uploadStatus === 'SUCCESS' ? (
                 <div>
-                  <img
-                    src={previewUrl}
-                    alt="Payment Screenshot Preview"
-                    style={{ maxHeight: '130px', borderRadius: '8px', margin: '0 auto 8px auto', display: 'block', border: '1px solid rgba(255,255,255,0.2)' }}
-                  />
-                  <span style={{ fontSize: '0.85rem', color: '#34D399', fontWeight: 700 }}>
-                    ✓ Screenshot Selected: {file.name}
+                  {previewUrl && (
+                    <img
+                      src={previewUrl}
+                      alt="Payment Receipt Preview"
+                      style={{ maxHeight: '115px', borderRadius: '8px', margin: '0 auto 6px auto', display: 'block', border: '1px solid rgba(52, 211, 153, 0.4)' }}
+                    />
+                  )}
+                  <div style={{ color: '#34D399', fontWeight: 800, fontSize: '0.92rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    <CheckCircle2 size={18} /> Payment Screenshot Uploaded Successfully
+                  </div>
+                  <span style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: '2px', display: 'block' }}>
+                    Cloudinary URL verified & ready for submission
                   </span>
+                </div>
+              ) : uploadStatus === 'ERROR' ? (
+                <div>
+                  <AlertCircle size={28} color="#F87171" style={{ margin: '0 auto 6px auto', display: 'block' }} />
+                  <p style={{ color: '#F87171', fontSize: '0.88rem', fontWeight: 700 }}>
+                    {uploadError || 'Failed to upload payment screenshot. Please try again.'}
+                  </p>
+                  <p style={{ color: '#94A3B8', fontSize: '0.78rem', marginTop: '4px' }}>
+                    Click here to select a new screenshot image
+                  </p>
                 </div>
               ) : (
                 <div>
@@ -254,11 +324,18 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={!isSubmitAllowed}
             className="btn-primary"
-            style={{ width: '100%', justifyContent: 'center', padding: '14px', fontSize: '0.95rem' }}
+            style={{
+              width: '100%',
+              justifyContent: 'center',
+              padding: '14px',
+              fontSize: '0.95rem',
+              opacity: isSubmitAllowed ? 1 : 0.45,
+              cursor: isSubmitAllowed ? 'pointer' : 'not-allowed'
+            }}
           >
-            {loading ? 'Submitting Payment Proof...' : 'Submit Payment Proof'}
+            {loading ? 'Submitting Payment Proof...' : uploadStatus === 'UPLOADING' ? 'Uploading Screenshot...' : 'Submit Payment Proof'}
           </button>
         </form>
 

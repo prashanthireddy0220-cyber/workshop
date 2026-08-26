@@ -5,8 +5,18 @@ const cloudinary = require('../config/cloudinary');
 /**
  * Helper to upload buffer to Cloudinary using upload_stream
  */
-const uploadToCloudinary = (fileBuffer) => {
+const uploadToCloudinary = (fileBuffer, mimeType = 'image/png') => {
   return new Promise((resolve, reject) => {
+    // Check if Cloudinary credentials exist
+    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+      const base64 = fileBuffer.toString('base64');
+      const dataUrl = `data:${mimeType};base64,${base64}`;
+      return resolve({
+        secure_url: dataUrl,
+        public_id: `payment-proof-${Date.now()}`
+      });
+    }
+
     const stream = cloudinary.uploader.upload_stream(
       {
         folder: 'ieee/upi-payments',
@@ -14,7 +24,13 @@ const uploadToCloudinary = (fileBuffer) => {
       },
       (error, result) => {
         if (error) {
-          reject(error);
+          console.error('[Cloudinary Direct Upload Error]', error);
+          const base64 = fileBuffer.toString('base64');
+          const dataUrl = `data:${mimeType};base64,${base64}`;
+          resolve({
+            secure_url: dataUrl,
+            public_id: `payment-proof-${Date.now()}`
+          });
         } else {
           resolve(result);
         }
@@ -22,6 +38,34 @@ const uploadToCloudinary = (fileBuffer) => {
     );
     stream.end(fileBuffer);
   });
+};
+
+const uploadScreenshotOnly = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No payment screenshot file attached.'
+      });
+    }
+
+    const mimeType = req.file.mimetype || 'image/png';
+    const cloudinaryResult = await uploadToCloudinary(req.file.buffer, mimeType);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Payment screenshot uploaded successfully',
+      url: cloudinaryResult.secure_url,
+      publicId: cloudinaryResult.public_id,
+      secure_url: cloudinaryResult.secure_url
+    });
+  } catch (error) {
+    console.error('[Upload Screenshot Error]', error.message || error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to upload payment screenshot. Please try again.'
+    });
+  }
 };
 
 const submitPayment = async (req, res) => {
@@ -80,7 +124,6 @@ const submitPayment = async (req, res) => {
       // Check if payment entry exists (re-submission case)
       let payment = await Payment.findOne({ registrationId });
       if (payment) {
-        // If replacing an existing Cloudinary image, clean up old asset
         if (payment.upiScreenshotPublicId && payment.upiScreenshotPublicId !== upiScreenshotPublicId) {
           try {
             await cloudinary.uploader.destroy(payment.upiScreenshotPublicId);
@@ -112,7 +155,6 @@ const submitPayment = async (req, res) => {
         });
       }
 
-      // Update Registration status & screenshot URL
       registration.status = 'PAYMENT_SUBMITTED';
       registration.paymentStatus = 'PENDING';
       if (upiScreenshotUrl) {
@@ -129,7 +171,6 @@ const submitPayment = async (req, res) => {
     } catch (mongoError) {
       console.error('[MongoDB Payment Save Error]', mongoError);
       
-      // Cleanup Cloudinary image if DB save failed
       if (uploadedPublicId) {
         try {
           await cloudinary.uploader.destroy(uploadedPublicId);
@@ -167,5 +208,6 @@ const getPaymentByRegistrationId = async (req, res) => {
 
 module.exports = {
   submitPayment,
+  uploadScreenshotOnly,
   getPaymentByRegistrationId
 };
