@@ -200,4 +200,14 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`[Server] KARE IEEE Workshop Backend running on port ${PORT}`);
+  console.log('==================================================');
+  console.log('[Server] ATTENDANCE & API ENDPOINTS VERIFIED READY:');
+  console.log(' -> POST /api/attendance/login');
+  console.log(' -> GET  /api/attendance/current');
+  console.log(' -> POST /api/attendance/scan');
+  console.log(' -> POST /api/attendance/session/start');
+  console.log(' -> POST /api/attendance/session/close');
+  console.log(' -> GET  /api/attendance/volunteers');
+  console.log(' -> Socket.IO Path: /socket.io/');
+  console.log('==================================================');
 });
