@@ -136,14 +136,24 @@ const AttendanceScannerPage = () => {
   // 2. Socket.IO Real-Time Synchronization Connection
   useEffect(() => {
     const getSocketUrl = () => {
-      let url = (import.meta.env.VITE_API_URL || 'http://localhost:5001').trim();
+      let envUrl = import.meta.env.VITE_API_URL;
+      if (!envUrl) {
+        if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+          envUrl = 'https://workshop-9be7.onrender.com';
+        } else {
+          envUrl = 'http://localhost:5001';
+        }
+      }
+      let url = envUrl.trim().replace(/\/+$/, '');
       return url.replace(/\/api\/?$/, '');
     };
 
     const socketUrl = getSocketUrl();
     const socket = io(socketUrl, {
-      transports: ['websocket', 'polling'],
-      reconnection: true
+      transports: ['polling', 'websocket'],
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000
     });
 
     socketRef.current = socket;

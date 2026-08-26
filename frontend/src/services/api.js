@@ -2,8 +2,15 @@ import axios from 'axios';
 
 // Normalize API Base URL to ensure /api suffix is present
 const getBaseUrl = () => {
-  let url = (import.meta.env.VITE_API_URL || 'http://localhost:5001/api').trim();
-  url = url.replace(/\/+$/, '');
+  let envUrl = import.meta.env.VITE_API_URL;
+  if (!envUrl) {
+    if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      envUrl = 'https://workshop-9be7.onrender.com/api';
+    } else {
+      envUrl = 'http://localhost:5001/api';
+    }
+  }
+  let url = envUrl.trim().replace(/\/+$/, '');
   if (!url.endsWith('/api')) {
     url = `${url}/api`;
   }

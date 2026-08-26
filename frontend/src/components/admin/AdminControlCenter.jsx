@@ -169,11 +169,19 @@ const AdminControlCenter = () => {
 
     // Socket.IO for live Admin updates
     const getSocketUrl = () => {
-      let url = (import.meta.env.VITE_API_URL || 'http://localhost:5001').trim();
+      let envUrl = import.meta.env.VITE_API_URL;
+      if (!envUrl) {
+        if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+          envUrl = 'https://workshop-9be7.onrender.com';
+        } else {
+          envUrl = 'http://localhost:5001';
+        }
+      }
+      let url = envUrl.trim().replace(/\/+$/, '');
       return url.replace(/\/api\/?$/, '');
     };
 
-    const socket = io(getSocketUrl(), { transports: ['websocket', 'polling'] });
+    const socket = io(getSocketUrl(), { transports: ['polling', 'websocket'], reconnection: true });
 
     socket.on('attendance_updated', (data) => {
       if (data && data.presentCount !== undefined) {
