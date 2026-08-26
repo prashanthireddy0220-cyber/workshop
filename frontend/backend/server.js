@@ -160,15 +160,12 @@ app.use('/certificates', require('./src/routes/certificateRoutes'));
 // Explicit Fallback Route Handlers (guarantees zero 404s for login, settings & payment upload)
 app.all(['/api/payments/upload-screenshot', '/payments/upload-screenshot'], (req, res, next) => {
   if (req.method === 'OPTIONS') return res.status(204).end();
-  const { protect } = require('./src/middleware/authMiddleware');
   const { uploadPaymentScreenshot } = require('./src/middleware/uploadMiddleware');
   const { uploadScreenshotOnly } = require('./src/controllers/paymentController');
 
-  return protect(req, res, () => {
-    return uploadPaymentScreenshot.single('screenshot')(req, res, (err) => {
-      if (err) return res.status(400).json({ success: false, message: err.message });
-      return uploadScreenshotOnly(req, res, next);
-    });
+  return uploadPaymentScreenshot.single('screenshot')(req, res, (err) => {
+    if (err) return res.status(400).json({ success: false, message: err.message });
+    return uploadScreenshotOnly(req, res, next);
   });
 });
 
