@@ -43,17 +43,27 @@ const uploadToCloudinary = (fileBuffer, mimeType = 'image/png') => {
 const uploadScreenshotOnly = async (req, res) => {
   try {
     const { registrationId, transactionId, amount } = req.body;
+    console.log('==================================================');
+    console.log('[PAYMENT UPLOAD ROUTE HIT]');
+    console.log(` -> Timestamp: ${new Date().toISOString()}`);
+    console.log(` -> File attached: ${req.file ? `YES (name=${req.file.originalname}, size=${req.file.size}b, mime=${req.file.mimetype})` : 'NO'}`);
+    console.log(` -> Payload: registrationId="${registrationId || ''}", transactionId="${transactionId || ''}"`);
+
     let upiScreenshotUrl = '';
     let upiScreenshotPublicId = '';
 
     if (req.file) {
+      console.log('[CLOUDINARY UPLOAD ATTEMPT] Streaming buffer to Cloudinary folder "ieee/upi-payments"...');
       const mimeType = req.file.mimetype || 'image/png';
       const cloudinaryResult = await uploadToCloudinary(req.file.buffer, mimeType);
       upiScreenshotUrl = cloudinaryResult.secure_url;
       upiScreenshotPublicId = cloudinaryResult.public_id;
+      console.log(`[CLOUDINARY UPLOAD SUCCESS] Secure URL: ${upiScreenshotUrl}`);
     } else if (req.body.screenshotUrl) {
       upiScreenshotUrl = req.body.screenshotUrl;
+      console.log(`[CLOUDINARY URL REUSED] URL: ${upiScreenshotUrl}`);
     } else {
+      console.warn('[PAYMENT UPLOAD REJECTED] No screenshot file provided in request.');
       return res.status(400).json({
         success: false,
         message: 'No payment screenshot file attached.'
@@ -64,6 +74,7 @@ const uploadScreenshotOnly = async (req, res) => {
     if (registrationId && transactionId) {
       const cleanUtr = String(transactionId).trim();
       if (cleanUtr.length !== 12 || !/^\d{12}$/.test(cleanUtr)) {
+        console.warn(`[PAYMENT UPLOAD REJECTED] Invalid UTR length/format: "${cleanUtr}"`);
         return res.status(400).json({
           success: false,
           message: 'UPI Reference / UTR Number must be exactly 12 numeric digits.'
@@ -110,6 +121,9 @@ const uploadScreenshotOnly = async (req, res) => {
         registration.screenshotUrl = upiScreenshotUrl;
         await registration.save();
 
+        console.log(`[DATABASE UPDATE SUCCESS] Registration ${registration.registrationId} updated with payment proof.`);
+        console.log('==================================================');
+
         return res.status(200).json({
           success: true,
           message: 'Payment proof submitted successfully!',
@@ -120,6 +134,9 @@ const uploadScreenshotOnly = async (req, res) => {
         });
       }
     }
+
+    console.log('[PAYMENT SCREENSHOT PRE-UPLOAD SUCCESS]');
+    console.log('==================================================');
 
     return res.status(200).json({
       success: true,
