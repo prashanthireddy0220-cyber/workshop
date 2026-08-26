@@ -32,6 +32,8 @@ const ensureTicketForRegistration = async (registration) => {
     console.error('[Ticket QR Auto-Generation Error]', err);
     return null;
   }
+};
+
 const generateSequentialRegistrationId = async () => {
   const registrations = await Registration.find({}, { registrationId: 1 }).lean();
   let maxNum = 0;

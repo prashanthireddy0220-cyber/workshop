@@ -31,7 +31,7 @@ const connectDB = async () => {
       console.error(`[Database Error] Connection failed (${error.message}). Retrying in 5 seconds...`);
       connectionPromise = null;
       setTimeout(connectDB, 5000);
-      throw error;
+      return null;
     } finally {
       if (mongoose.connection.readyState !== 1) {
         connectionPromise = null;
