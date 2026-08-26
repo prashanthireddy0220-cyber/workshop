@@ -148,8 +148,11 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
     const selected = e.target.files[0];
     if (!selected) return;
 
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (!allowedTypes.includes(selected.type)) {
+    const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/pjpeg', 'image/png', 'image/x-png', 'image/webp'];
+    const ext = (selected.name || '').toLowerCase();
+    const hasValidExt = /\.(jpe?g|png|webp)$/i.test(ext);
+
+    if (!allowedMimeTypes.includes(selected.type) && !hasValidExt) {
       setUploadStatus('ERROR');
       setUploadError('Invalid image type. Only JPEG, JPG, PNG, and WebP images are allowed.');
       return;
@@ -160,8 +163,10 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
       return;
     }
 
+    // Set local preview & file state immediately
     setPaymentFile(selected);
-    setPaymentPreviewUrl(URL.createObjectURL(selected));
+    const localUrl = URL.createObjectURL(selected);
+    setPaymentPreviewUrl(localUrl);
     setUploadStatus('UPLOADING');
     setUploadError('');
     setError('');
@@ -179,14 +184,12 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
         setUploadError('');
       } else {
         setUploadStatus('ERROR');
-        setUploadError(res.data.message || 'Failed to upload payment screenshot. Please try again.');
-        setUploadedUrl('');
+        setUploadError(res.data.message || 'Failed to upload payment screenshot to Cloudinary. Please try again.');
       }
     } catch (err) {
       console.error('[Cloudinary Upload Error]', err);
       setUploadStatus('ERROR');
-      setUploadError(err.response?.data?.message || 'Failed to upload payment screenshot. Please try again.');
-      setUploadedUrl('');
+      setUploadError(err.response?.data?.message || 'Failed to upload payment screenshot to Cloudinary. Please try again.');
     }
   };
 
