@@ -67,7 +67,7 @@ const AdminSettings = () => {
         <form onSubmit={handleUpdateSecurity} style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '500px' }}>
           <div>
             <label style={{ fontSize: '0.82rem', color: '#94A3B8', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Current Admin Username</label>
-            <input type="text" className="form-control" defaultValue="Workshop" readOnly style={{ background: 'rgba(255,255,255,0.03)' }} />
+            <input type="text" className="form-control" placeholder="Admin Username" readOnly style={{ background: 'rgba(255,255,255,0.03)' }} />
           </div>
 
           <div>

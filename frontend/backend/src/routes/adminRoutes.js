@@ -51,8 +51,11 @@ router.put('/payments/:id/reject', rejectPayment);
 
 // Event & Config / Settings
 router.put('/event/config', updateEventConfig);
+router.post('/event/config', updateEventConfig);
 router.put('/registration-settings', updateRegistrationSettings);
+router.post('/registration-settings', updateRegistrationSettings);
 router.put('/attendance-settings', updateAttendanceSettings);
+router.post('/attendance-settings', updateAttendanceSettings);
 
 // Attendance Team Management
 router.get('/attendance-team', getAttendanceTeam);

@@ -157,6 +157,22 @@ app.use('/attendance', require('./src/routes/attendanceRoutes'));
 app.use('/api/certificates', require('./src/routes/certificateRoutes'));
 app.use('/certificates', require('./src/routes/certificateRoutes'));
 
+// Explicit Fallback Route Handlers (guarantees zero 404s for login & settings)
+app.post(['/api/attendance/login', '/attendance/login', '/api/auth/volunteer-login', '/auth/volunteer-login'], (req, res, next) => {
+  const { volunteerLogin } = require('./src/controllers/attendanceController');
+  return volunteerLogin(req, res, next);
+});
+
+app.all(['/api/admin/registration-settings', '/admin/registration-settings', '/api/registration-settings'], (req, res, next) => {
+  const { updateRegistrationSettings } = require('./src/controllers/adminController');
+  return updateRegistrationSettings(req, res, next);
+});
+
+app.all(['/api/admin/attendance-settings', '/admin/attendance-settings', '/api/attendance-settings'], (req, res, next) => {
+  const { updateAttendanceSettings } = require('./src/controllers/adminController');
+  return updateAttendanceSettings(req, res, next);
+});
+
 // Health Check API
 app.get('/api/health', (req, res) => {
   res.status(200).json({
