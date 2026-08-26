@@ -114,7 +114,6 @@ const adminLogin = async (req, res) => {
     const isPasswordValid = inputPass === expectedPassword || inputPass === 'IEEE@123' || inputPass === 'admin123' || inputPass === 'admin';
 
     if (!isUsernameValid || !isPasswordValid) {
-      console.warn(`[Admin Auth Rejected] Input: user="${inputUser}", pass="${inputPass}"`);
       return res.status(401).json({ success: false, message: 'Invalid admin username or password.' });
     }
 
