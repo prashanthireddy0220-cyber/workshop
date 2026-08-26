@@ -42,22 +42,91 @@ const uploadToCloudinary = (fileBuffer, mimeType = 'image/png') => {
 
 const uploadScreenshotOnly = async (req, res) => {
   try {
-    if (!req.file) {
+    const { registrationId, transactionId, amount } = req.body;
+    let upiScreenshotUrl = '';
+    let upiScreenshotPublicId = '';
+
+    if (req.file) {
+      const mimeType = req.file.mimetype || 'image/png';
+      const cloudinaryResult = await uploadToCloudinary(req.file.buffer, mimeType);
+      upiScreenshotUrl = cloudinaryResult.secure_url;
+      upiScreenshotPublicId = cloudinaryResult.public_id;
+    } else if (req.body.screenshotUrl) {
+      upiScreenshotUrl = req.body.screenshotUrl;
+    } else {
       return res.status(400).json({
         success: false,
         message: 'No payment screenshot file attached.'
       });
     }
 
-    const mimeType = req.file.mimetype || 'image/png';
-    const cloudinaryResult = await uploadToCloudinary(req.file.buffer, mimeType);
+    // If registrationId and transactionId are supplied, complete DB update
+    if (registrationId && transactionId) {
+      const cleanUtr = String(transactionId).trim();
+      if (cleanUtr.length !== 12 || !/^\d{12}$/.test(cleanUtr)) {
+        return res.status(400).json({
+          success: false,
+          message: 'UPI Reference / UTR Number must be exactly 12 numeric digits.'
+        });
+      }
+
+      let registration = await Registration.findOne({ registrationId });
+      if (!registration && req.user) {
+        registration = await Registration.findOne({ userId: req.user._id });
+      }
+
+      if (registration) {
+        let payment = await Payment.findOne({ registrationId: registration.registrationId });
+        const isAlreadyVerified = registration.paymentStatus === 'PAID' || registration.paymentStatus === 'VERIFIED';
+        const targetStatus = isAlreadyVerified ? 'VERIFIED' : 'PENDING';
+        const feeAmount = parseInt(amount || process.env.REGISTRATION_FEE || '250', 10);
+
+        if (payment) {
+          payment.transactionId = cleanUtr;
+          payment.screenshotUrl = upiScreenshotUrl;
+          payment.upiScreenshotUrl = upiScreenshotUrl;
+          payment.upiScreenshotPublicId = upiScreenshotPublicId;
+          payment.amount = feeAmount;
+          payment.status = targetStatus;
+          payment.submittedAt = Date.now();
+          await payment.save();
+        } else {
+          payment = await Payment.create({
+            registrationId: registration.registrationId,
+            userId: registration.userId,
+            amount: feeAmount,
+            transactionId: cleanUtr,
+            screenshotUrl: upiScreenshotUrl,
+            upiScreenshotUrl,
+            upiScreenshotPublicId,
+            status: targetStatus,
+            submittedAt: Date.now()
+          });
+        }
+
+        registration.status = 'PAYMENT_SUBMITTED';
+        registration.paymentStatus = 'PENDING';
+        registration.upiScreenshotUrl = upiScreenshotUrl;
+        registration.screenshotUrl = upiScreenshotUrl;
+        await registration.save();
+
+        return res.status(200).json({
+          success: true,
+          message: 'Payment proof submitted successfully!',
+          url: upiScreenshotUrl,
+          publicId: upiScreenshotPublicId,
+          payment,
+          registration
+        });
+      }
+    }
 
     return res.status(200).json({
       success: true,
       message: 'Payment screenshot uploaded successfully',
-      url: cloudinaryResult.secure_url,
-      publicId: cloudinaryResult.public_id,
-      secure_url: cloudinaryResult.secure_url
+      url: upiScreenshotUrl,
+      publicId: upiScreenshotPublicId,
+      secure_url: upiScreenshotUrl
     });
   } catch (error) {
     console.error('[Upload Screenshot Error]', error.message || error);
@@ -73,7 +142,7 @@ const submitPayment = async (req, res) => {
 
   try {
     const { registrationId, transactionId, amount } = req.body;
-    const userId = req.user._id;
+    const userId = req.user ? req.user._id : null;
 
     if (!registrationId || !transactionId) {
       return res.status(400).json({
@@ -82,8 +151,19 @@ const submitPayment = async (req, res) => {
       });
     }
 
-    // Verify registration exists for this user
-    const registration = await Registration.findOne({ registrationId, userId });
+    const cleanUtr = String(transactionId).trim();
+    if (cleanUtr.length !== 12 || !/^\d{12}$/.test(cleanUtr)) {
+      return res.status(400).json({
+        success: false,
+        message: 'UPI Reference / UTR Number must be exactly 12 numeric digits.'
+      });
+    }
+
+    let registration = await Registration.findOne({ registrationId });
+    if (!registration && userId) {
+      registration = await Registration.findOne({ userId });
+    }
+
     if (!registration) {
       return res.status(404).json({
         success: false,
@@ -121,8 +201,7 @@ const submitPayment = async (req, res) => {
       const targetStatus = isAlreadyVerified ? 'VERIFIED' : 'PENDING';
       const reqFee = parseInt(amount || process.env.REGISTRATION_FEE || '250', 10);
 
-      // Check if payment entry exists (re-submission case)
-      let payment = await Payment.findOne({ registrationId });
+      let payment = await Payment.findOne({ registrationId: registration.registrationId });
       if (payment) {
         if (payment.upiScreenshotPublicId && payment.upiScreenshotPublicId !== upiScreenshotPublicId) {
           try {
@@ -132,7 +211,7 @@ const submitPayment = async (req, res) => {
           }
         }
 
-        payment.transactionId = transactionId;
+        payment.transactionId = cleanUtr;
         payment.screenshotUrl = upiScreenshotUrl;
         payment.upiScreenshotUrl = upiScreenshotUrl;
         payment.upiScreenshotPublicId = upiScreenshotPublicId;
@@ -143,10 +222,10 @@ const submitPayment = async (req, res) => {
         await payment.save();
       } else {
         payment = await Payment.create({
-          registrationId,
-          userId,
+          registrationId: registration.registrationId,
+          userId: registration.userId || userId,
           amount: reqFee,
-          transactionId,
+          transactionId: cleanUtr,
           screenshotUrl: upiScreenshotUrl,
           upiScreenshotUrl,
           upiScreenshotPublicId,
@@ -166,7 +245,8 @@ const submitPayment = async (req, res) => {
       return res.status(200).json({
         success: true,
         message: 'Payment proof submitted successfully! Pending admin verification.',
-        payment
+        payment,
+        registration
       });
     } catch (mongoError) {
       console.error('[MongoDB Payment Save Error]', mongoError);
