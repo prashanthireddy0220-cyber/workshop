@@ -2,10 +2,18 @@ const mongoose = require('mongoose');
 
 const attendanceSchema = new mongoose.Schema(
   {
+    sessionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'AttendanceSession',
+      index: true
+    },
+    sessionName: {
+      type: String,
+      default: ''
+    },
     registrationId: {
       type: String,
       required: true,
-      unique: true,
       index: true
     },
     ticketId: {
@@ -58,11 +66,14 @@ const attendanceSchema = new mongoose.Schema(
       ref: 'User'
     },
     scannedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
+      type: String,
+      default: ''
     }
   },
   { timestamps: true }
 );
+
+// Compound index to ensure participant is unique PER ATTENDANCE SESSION
+attendanceSchema.index({ sessionId: 1, registrationId: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model('Attendance', attendanceSchema);
