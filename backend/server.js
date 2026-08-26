@@ -16,12 +16,17 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 
-// Initialize Socket.IO
+// Initialize Socket.IO with polling & websocket transports
 const io = new Server(server, {
   cors: {
     origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true
-  }
+  },
+  transports: ['polling', 'websocket'],
+  allowEIO3: true,
+  pingTimeout: 60000,
+  pingInterval: 25000
 });
 
 // Store io instance on app for controllers
@@ -104,15 +109,10 @@ const allowedOrigins = [
 
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
-        callback(null, true);
-      } else {
-        callback(null, true);
-      }
-    },
-    credentials: true
+    origin: true,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
   })
 );
 
