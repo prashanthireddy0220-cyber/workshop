@@ -46,8 +46,8 @@ const generateSequentialRegistrationId = async () => {
       }
     }
   }
-  const nextSeq = (maxNum + 1).toString().padStart(3, '0');
-  return `EDS-WS-${nextSeq}`;
+  const nextSeq = (maxNum + 1).toString().padStart(4, '0');
+  return `REG-KLU-5775-${nextSeq}`;
 };
 
 const createRegistration = async (req, res) => {
@@ -67,21 +67,33 @@ const createRegistration = async (req, res) => {
       });
     }
 
-    // Fetch Event & Check Capacity
+    // Fetch Event & Check Capacity & Registration Open State
     let event = await Event.findOne();
-    const capacity = event ? event.capacity : parseInt(process.env.EVENT_CAPACITY || '200');
-    const registeredCount = await Registration.countDocuments();
+    const registrationOpen = event ? (event.registrationOpen !== false) : true;
+    if (!registrationOpen) {
+      return res.status(400).json({
+        success: false,
+        message: 'Registration is currently closed by the administrator.'
+      });
+    }
+
+    const capacity = event ? (event.capacity || event.registrationLimit || 200) : parseInt(process.env.EVENT_CAPACITY || '200');
+    const registeredCount = await Registration.countDocuments({
+      $or: [
+        { seatStatus: 'CONFIRMED' },
+        { paymentStatus: { $in: ['PAID', 'VERIFIED'] } },
+        { status: { $in: ['PAYMENT_VERIFIED', 'ATTENDED'] } }
+      ]
+    });
 
     if (registeredCount >= capacity) {
       return res.status(400).json({
         success: false,
-        message: 'Registration is full. Capacity has been reached.'
+        message: 'Registration limit reached. Registration is full.'
       });
     }
 
     const eventId = event ? event._id : null;
-
-    // Generate unique Registration ID: EDS-WS-001
     const registrationId = await generateSequentialRegistrationId();
 
     const {
@@ -112,8 +124,6 @@ const createRegistration = async (req, res) => {
     });
 
     const ticket = await ensureTicketForRegistration(newRegistration);
-
-    // Send confirmation email asynchronously
     sendRegistrationSuccessEmail(newRegistration, event || { eventName: 'AI/ML Workshop', date: '2026-09-15', venue: 'IEEE Tech Hall' });
 
     return res.status(201).json({
@@ -192,7 +202,6 @@ const lockSeat = async (req, res) => {
     const userId = req.user._id;
     const userEmail = req.user.email ? req.user.email.toLowerCase().trim() : '';
 
-    // 1. SECURITY REQUIREMENT: Backend verification for @klu.ac.in
     if (!userEmail.endsWith('@klu.ac.in') && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
@@ -200,9 +209,8 @@ const lockSeat = async (req, res) => {
       });
     }
 
-    // 2. Fetch Event details & Enforce Limits
     let event = await Event.findOne();
-    const capacity = event ? event.capacity : parseInt(process.env.EVENT_CAPACITY || '200');
+    const capacity = event ? (event.capacity || event.registrationLimit || 200) : parseInt(process.env.EVENT_CAPACITY || '200');
     const registrationLimit = event?.registrationLimit !== undefined ? event.registrationLimit : capacity;
     const registrationOpen = event ? (event.registrationOpen !== false) : true;
     const registrationEnd = event?.registrationEnd || event?.registrationDeadline || '2026-08-28T23:59:59.000Z';
@@ -211,12 +219,17 @@ const lockSeat = async (req, res) => {
     if (now > new Date(registrationEnd) || !registrationOpen) {
       return res.status(400).json({
         success: false,
-        message: 'Registration is currently closed.'
+        message: 'Registration is currently closed by the administrator.'
       });
     }
 
-    // Check Total Registrations vs Limit
-    const currentRegCount = await Registration.countDocuments({ seatStatus: { $in: ['LOCKED', 'CONFIRMED'] } });
+    const currentRegCount = await Registration.countDocuments({
+      $or: [
+        { seatStatus: 'CONFIRMED' },
+        { paymentStatus: { $in: ['PAID', 'VERIFIED'] } },
+        { status: { $in: ['PAYMENT_VERIFIED', 'ATTENDED'] } }
+      ]
+    });
     let existingReg = await Registration.findOne({ $or: [{ userId }, { email: userEmail }] });
 
     if (currentRegCount >= registrationLimit && !existingReg) {
@@ -225,7 +238,7 @@ const lockSeat = async (req, res) => {
         message: 'Registration limit reached. Registration is closed.'
       });
     }
-    
+
     if (existingReg) {
       if (existingReg.seatStatus === 'CONFIRMED' || existingReg.paymentStatus === 'PAID' || existingReg.paymentStatus === 'VERIFIED') {
         return res.status(400).json({
@@ -236,24 +249,23 @@ const lockSeat = async (req, res) => {
         });
       }
 
-      // If active lock exists, extend/refresh lock for 10 minutes
+      const lockMinutes = parseInt(process.env.SEAT_LOCK_MINUTES || '10', 10);
       if (existingReg.seatStatus === 'LOCKED' && existingReg.lockExpiresAt > now) {
-        const lockDuration = 10 * 60 * 1000; // 10 minutes
+        const lockDuration = lockMinutes * 60 * 1000;
         existingReg.lockedAt = now;
         existingReg.lockExpiresAt = new Date(now.getTime() + lockDuration);
         await existingReg.save();
 
         return res.status(200).json({
           success: true,
-          message: 'Seat locked for payment (10 minutes remaining)',
+          message: `Seat locked for payment (${lockMinutes} minutes remaining)`,
           registration: existingReg,
-          lockDurationMinutes: 10,
+          lockDurationMinutes: lockMinutes,
           expiresAt: existingReg.lockExpiresAt
         });
       }
     }
 
-    // 4. Capacity Check
     const confirmedCount = await Registration.countDocuments({
       $or: [
         { seatStatus: 'CONFIRMED' },
@@ -274,9 +286,9 @@ const lockSeat = async (req, res) => {
       });
     }
 
-    // 5. Create new lock
     const registrationId = await generateSequentialRegistrationId();
-    const lockDuration = 10 * 60 * 1000; // 10 minutes
+    const lockMinutes = parseInt(process.env.SEAT_LOCK_MINUTES || '10', 10);
+    const lockDuration = lockMinutes * 60 * 1000;
     const lockExpiresAt = new Date(now.getTime() + lockDuration);
 
     const {
@@ -306,9 +318,9 @@ const lockSeat = async (req, res) => {
 
       return res.status(200).json({
         success: true,
-        message: 'Seat locked successfully for 10 minutes.',
+        message: `Seat locked successfully for ${lockMinutes} minutes.`,
         registration: existingReg,
-        lockDurationMinutes: 10,
+        lockDurationMinutes: lockMinutes,
         expiresAt: lockExpiresAt
       });
     }
@@ -336,9 +348,9 @@ const lockSeat = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: 'Seat locked successfully for 10 minutes.',
+      message: `Seat locked successfully for ${lockMinutes} minutes.`,
       registration: newRegistration,
-      lockDurationMinutes: 10,
+      lockDurationMinutes: lockMinutes,
       expiresAt: lockExpiresAt
     });
   } catch (error) {
@@ -352,6 +364,15 @@ const confirmPayment = async (req, res) => {
     const userId = req.user._id;
     const { registrationId, transactionId, paymentMethod } = req.body;
 
+    let event = await Event.findOne();
+    const registrationOpen = event ? (event.registrationOpen !== false) : true;
+    if (!registrationOpen) {
+      return res.status(400).json({
+        success: false,
+        message: 'Registration is currently closed by the administrator.'
+      });
+    }
+
     const registration = await Registration.findOne({
       $or: [
         { registrationId },
@@ -364,19 +385,18 @@ const confirmPayment = async (req, res) => {
     }
 
     const now = new Date();
+    const lockMinutes = parseInt(process.env.SEAT_LOCK_MINUTES || '10', 10);
     if (registration.seatStatus === 'LOCKED' && registration.lockExpiresAt < now) {
       return res.status(400).json({
         success: false,
-        message: 'Your 10-minute seat lock has expired. Please initiate registration again.'
+        message: `Your ${lockMinutes}-minute seat lock has expired. Please initiate registration again.`
       });
     }
 
-    // Keep payment status as PENDING for admin manual verification
     registration.paymentStatus = 'PENDING';
     registration.status = 'PAYMENT_SUBMITTED';
     await registration.save();
 
-    // Create or update Payment record with PENDING status
     let payment = await Payment.findOne({ registrationId: registration.registrationId });
     if (!payment) {
       payment = await Payment.create({

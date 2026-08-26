@@ -67,15 +67,29 @@ const createRegistration = async (req, res) => {
       });
     }
 
-    // Fetch Event & Check Capacity
+    // Fetch Event & Check Capacity & Registration Open State
     let event = await Event.findOne();
-    const capacity = event ? event.capacity : parseInt(process.env.EVENT_CAPACITY || '200');
-    const registeredCount = await Registration.countDocuments();
+    const registrationOpen = event ? (event.registrationOpen !== false) : true;
+    if (!registrationOpen) {
+      return res.status(400).json({
+        success: false,
+        message: 'Registration is currently closed by the administrator.'
+      });
+    }
+
+    const capacity = event ? (event.capacity || event.registrationLimit || 200) : parseInt(process.env.EVENT_CAPACITY || '200');
+    const registeredCount = await Registration.countDocuments({
+      $or: [
+        { seatStatus: 'CONFIRMED' },
+        { paymentStatus: { $in: ['PAID', 'VERIFIED'] } },
+        { status: { $in: ['PAYMENT_VERIFIED', 'ATTENDED'] } }
+      ]
+    });
 
     if (registeredCount >= capacity) {
       return res.status(400).json({
         success: false,
-        message: 'Registration is full. Capacity has been reached.'
+        message: 'Registration limit reached. Registration is full.'
       });
     }
 
@@ -353,6 +367,15 @@ const confirmPayment = async (req, res) => {
   try {
     const userId = req.user._id;
     const { registrationId, transactionId, paymentMethod } = req.body;
+
+    let event = await Event.findOne();
+    const registrationOpen = event ? (event.registrationOpen !== false) : true;
+    if (!registrationOpen) {
+      return res.status(400).json({
+        success: false,
+        message: 'Registration is currently closed by the administrator.'
+      });
+    }
 
     const registration = await Registration.findOne({
       $or: [
