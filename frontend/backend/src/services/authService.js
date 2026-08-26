@@ -92,8 +92,8 @@ const verifyGoogleTokenAndAuthenticate = async (credential, devUserOverride = nu
 
   // Generate JWT Token
   const token = jwt.sign(
-    { id: user._id, email: user.email, role: user.role },
-    process.env.JWT_SECRET || 'kare_ieee_education_society_secret_key_2026',
+    { id: user._id, email: user.email, name: user.name, role: user.role },
+    process.env.JWT_SECRET || 'kare_ieee_secret',
     { expiresIn: '7d' }
   );
 
