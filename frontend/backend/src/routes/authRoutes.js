@@ -6,6 +6,7 @@ const { protect } = require('../middleware/authMiddleware');
 router.post('/google', googleLogin);
 router.post('/dev-login', devLogin);
 router.post('/admin-login', adminLogin);
+router.post('/volunteer-login', require('../controllers/attendanceController').volunteerLogin);
 router.get('/me', protect, getMe);
 router.post('/logout', logout);
 

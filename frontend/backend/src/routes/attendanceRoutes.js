@@ -18,6 +18,7 @@ const { protect, requireRoles } = require('../middleware/authMiddleware');
 
 // Volunteer Auth
 router.post('/login', volunteerLogin);
+router.post('/volunteer-login', volunteerLogin);
 router.get('/me', protect, getVolunteerMe);
 
 // Session Status & Scan Routes

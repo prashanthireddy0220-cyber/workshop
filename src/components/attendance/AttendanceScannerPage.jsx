@@ -403,13 +403,15 @@ const AttendanceScannerPage = () => {
           )}
 
           {/* Login Form */}
-          <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          <form onSubmit={handleLoginSubmit} autoComplete="off" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#CBD5E1', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                 Email / Username
               </label>
               <input
                 type="text"
+                name="volunteer_identity_no_autofill"
+                autoComplete="off"
                 placeholder="volunteer@example.com"
                 value={loginForm.email}
                 onChange={(e) => setLoginForm(prev => ({ ...prev, email: e.target.value }))}
@@ -434,6 +436,8 @@ const AttendanceScannerPage = () => {
               </label>
               <input
                 type="password"
+                name="volunteer_password_no_autofill"
+                autoComplete="new-password"
                 placeholder="••••••••"
                 value={loginForm.password}
                 onChange={(e) => setLoginForm(prev => ({ ...prev, password: e.target.value }))}

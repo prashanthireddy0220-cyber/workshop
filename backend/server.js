@@ -134,13 +134,28 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes Mounting
 app.use('/api/auth', require('./src/routes/authRoutes'));
+app.use('/auth', require('./src/routes/authRoutes'));
+
 app.use('/api/event', require('./src/routes/eventRoutes'));
+app.use('/event', require('./src/routes/eventRoutes'));
+
 app.use('/api/registrations', require('./src/routes/registrationRoutes'));
+app.use('/registrations', require('./src/routes/registrationRoutes'));
+
 app.use('/api/payments', require('./src/routes/paymentRoutes'));
+app.use('/payments', require('./src/routes/paymentRoutes'));
+
 app.use('/api/admin', require('./src/routes/adminRoutes'));
+app.use('/admin', require('./src/routes/adminRoutes'));
+
 app.use('/api/tickets', require('./src/routes/ticketRoutes'));
+app.use('/tickets', require('./src/routes/ticketRoutes'));
+
 app.use('/api/attendance', require('./src/routes/attendanceRoutes'));
+app.use('/attendance', require('./src/routes/attendanceRoutes'));
+
 app.use('/api/certificates', require('./src/routes/certificateRoutes'));
+app.use('/certificates', require('./src/routes/certificateRoutes'));
 
 // Health Check API
 app.get('/api/health', (req, res) => {
