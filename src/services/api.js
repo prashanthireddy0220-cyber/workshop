@@ -26,10 +26,17 @@ const api = axios.create({
   }
 });
 
-// Interceptor to attach Bearer token
+// Interceptor to attach Bearer token cleanly
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('volunteerToken') || localStorage.getItem('token');
+    const adminToken = localStorage.getItem('token');
+    const volunteerToken = localStorage.getItem('volunteerToken');
+
+    let token = adminToken;
+    if (!token || (config.url && config.url.includes('/attendance/scan') && volunteerToken)) {
+      token = volunteerToken || adminToken;
+    }
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

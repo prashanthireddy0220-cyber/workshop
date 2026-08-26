@@ -30,14 +30,14 @@ router.post('/mark', protect, scanAttendance);
 router.post('/check-in', protect, scanAttendance);
 
 // Admin Attendance Session Control
-router.post('/session/start', protect, requireRoles('admin'), startSession);
-router.post('/session/close', protect, requireRoles('admin'), closeSession);
+router.post('/session/start', protect, requireRoles('admin', 'volunteer', 'attendance_volunteer', 'attendance_team'), startSession);
+router.post('/session/close', protect, requireRoles('admin', 'volunteer', 'attendance_volunteer', 'attendance_team'), closeSession);
 
 // Admin Volunteer Management
-router.get('/volunteers', protect, requireRoles('admin'), getVolunteers);
-router.post('/volunteers', protect, requireRoles('admin'), createVolunteer);
-router.put('/volunteers/:id', protect, requireRoles('admin'), updateVolunteerStatus);
-router.delete('/volunteers/:id', protect, requireRoles('admin'), deleteVolunteer);
+router.get('/volunteers', protect, requireRoles('admin', 'volunteer', 'attendance_volunteer', 'attendance_team'), getVolunteers);
+router.post('/volunteers', protect, requireRoles('admin', 'volunteer', 'attendance_volunteer', 'attendance_team'), createVolunteer);
+router.put('/volunteers/:id', protect, requireRoles('admin', 'volunteer', 'attendance_volunteer', 'attendance_team'), updateVolunteerStatus);
+router.delete('/volunteers/:id', protect, requireRoles('admin', 'volunteer', 'attendance_volunteer', 'attendance_team'), deleteVolunteer);
 
 // Admin Session History & Records
 router.get('/sessions', protect, requireRoles('admin'), getSessionHistory);
