@@ -62,6 +62,13 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
       formData.append('amount', 250);
       formData.append('screenshot', file);
 
+      console.log("registrationId:", registrationId);
+      console.log("transactionId:", utr);
+      console.log("screenshotFile:", file);
+      console.log("file name:", file?.name);
+      console.log("file type:", file?.type);
+      console.log("file size:", file?.size);
+
       const res = await submitPayment(formData);
       if (res.data.success) {
         await refreshRegistration();

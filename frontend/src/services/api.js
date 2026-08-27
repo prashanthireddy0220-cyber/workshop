@@ -26,9 +26,17 @@ const api = axios.create({
   }
 });
 
-// Interceptor to attach Bearer token cleanly
+// Interceptor to attach Bearer token cleanly & remove JSON Content-Type for FormData
 api.interceptors.request.use(
   (config) => {
+    // If request data is FormData, remove forced JSON Content-Type header so browser/axios handles boundary automatically
+    if (config.data instanceof FormData) {
+      if (config.headers) {
+        delete config.headers['Content-Type'];
+        delete config.headers['content-type'];
+      }
+    }
+
     const adminToken = localStorage.getItem('token');
     const volunteerToken = localStorage.getItem('volunteerToken');
 
@@ -64,8 +72,16 @@ export const getMyRegistration = () => api.get('/registrations/me');
 export const getRegistrationById = (id) => api.get(`/registrations/${id}`);
 
 // Payment Services
-export const submitPayment = (formData) => api.post('/payments/submit', formData);
-export const uploadPaymentScreenshotApi = (formData) => api.post('/payments/upload-screenshot', formData);
+export const submitPayment = (formData) =>
+  api.post('/payments/submit', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+
+export const uploadPaymentScreenshotApi = (formData) =>
+  api.post('/payments/upload-screenshot', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+
 export const getPayment = (registrationId) => api.get(`/payments/${registrationId}`);
 
 // Admin Services

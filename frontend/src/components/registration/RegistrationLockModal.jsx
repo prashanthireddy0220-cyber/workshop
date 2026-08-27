@@ -212,6 +212,13 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
         uploadData.append('amount', feeAmount);
         uploadData.append('screenshot', paymentFile);
 
+        console.log("registrationId:", registrationRecord.registrationId);
+        console.log("transactionId:", utr);
+        console.log("screenshotFile:", paymentFile);
+        console.log("file name:", paymentFile?.name);
+        console.log("file type:", paymentFile?.type);
+        console.log("file size:", paymentFile?.size);
+
         const uploadRes = await submitPayment(uploadData);
 
         if (uploadRes.data.success) {

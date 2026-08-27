@@ -47,7 +47,11 @@ const uploadScreenshotOnly = async (req, res) => {
     console.log('[PAYMENT UPLOAD ROUTE HIT]');
     console.log(` -> Timestamp: ${new Date().toISOString()}`);
     console.log(` -> File attached: ${req.file ? `YES (name=${req.file.originalname}, size=${req.file.size}b, mime=${req.file.mimetype})` : 'NO'}`);
+    console.log("req.body:", req.body);
+    console.log("req.file:", req.file);
+    console.log("req.files:", req.files);
     console.log(` -> Payload: registrationId="${registrationId || ''}", transactionId="${transactionId || ''}"`);
+    console.log('==================================================');
 
     let upiScreenshotUrl = '';
     let upiScreenshotPublicId = '';
@@ -160,6 +164,16 @@ const submitPayment = async (req, res) => {
   try {
     const { registrationId, transactionId, amount } = req.body;
     const userId = req.user ? req.user._id : null;
+
+    console.log('==================================================');
+    console.log('[PAYMENT SUBMIT ROUTE HIT]');
+    console.log(` -> Timestamp: ${new Date().toISOString()}`);
+    console.log(` -> File attached: ${req.file ? `YES (name=${req.file.originalname}, size=${req.file.size}b, mime=${req.file.mimetype})` : 'NO'}`);
+    console.log("req.body:", req.body);
+    console.log("req.file:", req.file);
+    console.log("req.files:", req.files);
+    console.log(` -> Payload: registrationId="${registrationId || ''}", transactionId="${transactionId || ''}"`);
+    console.log('==================================================');
 
     if (!registrationId || !transactionId) {
       return res.status(400).json({

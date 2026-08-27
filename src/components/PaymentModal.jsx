@@ -52,6 +52,8 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
     try {
       const uploadData = new FormData();
       uploadData.append('screenshot', selectedFile);
+      if (registrationId) uploadData.append('registrationId', registrationId);
+      if (transactionId) uploadData.append('transactionId', transactionId);
 
       const res = await uploadPaymentScreenshotApi(uploadData);
       if (res.data.success && (res.data.url || res.data.secure_url)) {
@@ -97,6 +99,13 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
       if (file) {
         formData.append('screenshot', file);
       }
+
+      console.log("registrationId:", registrationId);
+      console.log("transactionId:", utr);
+      console.log("screenshotFile:", file);
+      console.log("file name:", file?.name);
+      console.log("file type:", file?.type);
+      console.log("file size:", file?.size);
 
       const res = await submitPayment(formData);
       if (res.data.success) {

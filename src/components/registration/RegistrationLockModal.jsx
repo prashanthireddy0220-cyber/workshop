@@ -174,6 +174,8 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
     try {
       const uploadData = new FormData();
       uploadData.append('screenshot', selected);
+      if (lockedRegistrationId) uploadData.append('registrationId', lockedRegistrationId);
+      if (formData.transactionId) uploadData.append('transactionId', formData.transactionId);
 
       const res = await uploadPaymentScreenshotApi(uploadData);
       if (res.data.success && (res.data.url || res.data.secure_url)) {
@@ -250,6 +252,13 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
         if (paymentFile) {
           uploadData.append('screenshot', paymentFile);
         }
+
+        console.log("registrationId:", registrationRecord.registrationId);
+        console.log("transactionId:", utr);
+        console.log("screenshotFile:", paymentFile);
+        console.log("file name:", paymentFile?.name);
+        console.log("file type:", paymentFile?.type);
+        console.log("file size:", paymentFile?.size);
 
         const uploadRes = await submitPayment(uploadData);
 
