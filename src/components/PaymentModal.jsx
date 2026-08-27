@@ -100,12 +100,18 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
         formData.append('screenshot', file);
       }
 
-      console.log("registrationId:", registrationId);
-      console.log("transactionId:", utr);
-      console.log("screenshotFile:", file);
-      console.log("file name:", file?.name);
-      console.log("file type:", file?.type);
-      console.log("file size:", file?.size);
+      console.log("[PAYMENT DEBUG]", {
+        registrationId,
+        transactionId: utr,
+        screenshotFile: file,
+        fileName: file?.name,
+        fileType: file?.type,
+        fileSize: file?.size
+      });
+
+      for (const [key, value] of formData.entries()) {
+        console.log("[FORM DATA]", key, value);
+      }
 
       const res = await submitPayment(formData);
       if (res.data.success) {
