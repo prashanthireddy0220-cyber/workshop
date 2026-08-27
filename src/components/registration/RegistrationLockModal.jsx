@@ -144,7 +144,7 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
     }
   };
 
-  const handleFileChange = async (e) => {
+  const handleFileChange = (e) => {
     const selected = e.target.files[0];
     if (!selected) return;
 
@@ -153,46 +153,17 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
     const hasValidExt = /\.(jpe?g|png|webp)$/i.test(ext);
 
     if (!allowedMimeTypes.includes(selected.type) && !hasValidExt) {
-      setUploadStatus('ERROR');
-      setUploadError('Invalid image type. Only JPEG, JPG, PNG, and WebP images are allowed.');
+      setError('Invalid image type. Only JPEG, JPG, PNG, and WebP images are allowed.');
       return;
     }
     if (selected.size > 5 * 1024 * 1024) {
-      setUploadStatus('ERROR');
-      setUploadError('Image size must be 5 MB or less.');
+      setError('Image size must be 5 MB or less.');
       return;
     }
 
-    // Set local preview & file state immediately
     setPaymentFile(selected);
-    const localUrl = URL.createObjectURL(selected);
-    setPaymentPreviewUrl(localUrl);
-    setUploadStatus('UPLOADING');
-    setUploadError('');
+    setPaymentPreviewUrl(URL.createObjectURL(selected));
     setError('');
-
-    try {
-      const uploadData = new FormData();
-      uploadData.append('screenshot', selected);
-      if (lockedRegistrationId) uploadData.append('registrationId', lockedRegistrationId);
-      if (formData.transactionId) uploadData.append('transactionId', formData.transactionId);
-
-      const res = await uploadPaymentScreenshotApi(uploadData);
-      if (res.data.success && (res.data.url || res.data.secure_url)) {
-        const cUrl = res.data.url || res.data.secure_url;
-        setUploadedUrl(cUrl);
-        setUploadedPublicId(res.data.publicId || '');
-        setUploadStatus('SUCCESS');
-        setUploadError('');
-      } else {
-        setUploadStatus('ERROR');
-        setUploadError(res.data.message || 'Failed to upload payment screenshot to Cloudinary. Please try again.');
-      }
-    } catch (err) {
-      console.error('[Cloudinary Upload Error]', err);
-      setUploadStatus('ERROR');
-      setUploadError(err.response?.data?.message || 'Failed to upload payment screenshot to Cloudinary. Please try again.');
-    }
   };
 
   const handleNextToConfirm = (e) => {
@@ -216,8 +187,8 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
       return;
     }
 
-    if (uploadStatus !== 'SUCCESS' || !uploadedUrl) {
-      setError('Payment screenshot must be uploaded successfully to Cloudinary before submitting.');
+    if (!paymentFile) {
+      setError('Please upload your UPI payment screenshot proof before completing registration.');
       return;
     }
 
@@ -247,11 +218,7 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
         uploadData.append('registrationId', registrationRecord.registrationId);
         uploadData.append('transactionId', utr);
         uploadData.append('amount', feeAmount);
-        uploadData.append('screenshotUrl', uploadedUrl);
-
-        if (paymentFile) {
-          uploadData.append('screenshot', paymentFile);
-        }
+        uploadData.append('screenshot', paymentFile);
 
         console.log("[PAYMENT DEBUG]", {
           registrationId: registrationRecord.registrationId,
@@ -274,11 +241,11 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
           setSubmittedPayment({ transactionId: utr, amount: feeAmount });
           setStep(3);
         } else {
-          setError(uploadRes.data.message || 'Failed to confirm payment record. Please try again.');
+          setError(uploadRes.data.message || 'Failed to upload payment screenshot proof. Please try again.');
         }
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Payment submission failed. Please ensure screenshot upload is verified.');
+      setError(err.response?.data?.message || 'Payment submission failed. Please ensure screenshot is attached and UTR is valid.');
     } finally {
       setLoading(false);
     }
