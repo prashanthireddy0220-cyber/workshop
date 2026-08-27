@@ -42,13 +42,15 @@ const uploadToCloudinary = (fileBuffer, mimeType = 'image/png') => {
 
 const uploadScreenshotOnly = async (req, res) => {
   try {
-    const { registrationId, transactionId, amount } = req.body;
+    const { registrationId, transactionId, amount } = req.body || {};
+    const targetFile = req.file || (req.files && (req.files.paymentScreenshot?.[0] || req.files.screenshot?.[0]));
+
     console.log('==================================================');
     console.log('[PAYMENT UPLOAD ROUTE HIT]');
     console.log(` -> Timestamp: ${new Date().toISOString()}`);
-    console.log(` -> File attached: ${req.file ? `YES (name=${req.file.originalname}, size=${req.file.size}b, mime=${req.file.mimetype})` : 'NO'}`);
+    console.log(` -> File attached: ${targetFile ? `YES (name=${targetFile.originalname}, size=${targetFile.size}b, mime=${targetFile.mimetype})` : 'NO'}`);
     console.log("req.body:", req.body);
-    console.log("req.file:", req.file);
+    console.log("req.file:", targetFile);
     console.log("req.files:", req.files);
     console.log(` -> Payload: registrationId="${registrationId || ''}", transactionId="${transactionId || ''}"`);
     console.log('==================================================');
@@ -56,10 +58,10 @@ const uploadScreenshotOnly = async (req, res) => {
     let upiScreenshotUrl = '';
     let upiScreenshotPublicId = '';
 
-    if (req.file) {
+    if (targetFile) {
       console.log('[CLOUDINARY UPLOAD ATTEMPT] Streaming buffer to Cloudinary folder "ieee/upi-payments"...');
-      const mimeType = req.file.mimetype || 'image/png';
-      const cloudinaryResult = await uploadToCloudinary(req.file.buffer, mimeType);
+      const mimeType = targetFile.mimetype || 'image/png';
+      const cloudinaryResult = await uploadToCloudinary(targetFile.buffer, mimeType);
       upiScreenshotUrl = cloudinaryResult.secure_url;
       upiScreenshotPublicId = cloudinaryResult.public_id;
       console.log(`[CLOUDINARY UPLOAD SUCCESS] Secure URL: ${upiScreenshotUrl}`);
@@ -164,13 +166,14 @@ const submitPayment = async (req, res) => {
   try {
     const { registrationId, transactionId, amount } = req.body;
     const userId = req.user ? req.user._id : null;
+    const targetFile = req.file || (req.files && (req.files.paymentScreenshot?.[0] || req.files.screenshot?.[0]));
 
     console.log('==================================================');
     console.log('[PAYMENT SUBMIT ROUTE HIT]');
     console.log(` -> Timestamp: ${new Date().toISOString()}`);
-    console.log(` -> File attached: ${req.file ? `YES (name=${req.file.originalname}, size=${req.file.size}b, mime=${req.file.mimetype})` : 'NO'}`);
+    console.log(` -> File attached: ${targetFile ? `YES (name=${targetFile.originalname}, size=${targetFile.size}b, mime=${targetFile.mimetype})` : 'NO'}`);
     console.log("req.body:", req.body);
-    console.log("req.file:", req.file);
+    console.log("req.file:", targetFile);
     console.log("req.files:", req.files);
     console.log(` -> Payload: registrationId="${registrationId || ''}", transactionId="${transactionId || ''}"`);
     console.log('==================================================');
@@ -205,9 +208,9 @@ const submitPayment = async (req, res) => {
     let upiScreenshotUrl = '';
     let upiScreenshotPublicId = '';
 
-    if (req.file) {
+    if (targetFile) {
       try {
-        const cloudinaryResult = await uploadToCloudinary(req.file.buffer);
+        const cloudinaryResult = await uploadToCloudinary(targetFile.buffer);
         upiScreenshotUrl = cloudinaryResult.secure_url;
         upiScreenshotPublicId = cloudinaryResult.public_id;
         uploadedPublicId = cloudinaryResult.public_id;

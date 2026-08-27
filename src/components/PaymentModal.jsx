@@ -51,6 +51,7 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
 
     try {
       const uploadData = new FormData();
+      uploadData.append('paymentScreenshot', selectedFile);
       uploadData.append('screenshot', selectedFile);
       if (registrationId) uploadData.append('registrationId', registrationId);
       if (transactionId) uploadData.append('transactionId', transactionId);
@@ -97,6 +98,7 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
       formData.append('screenshotUrl', uploadedUrl);
 
       if (file) {
+        formData.append('paymentScreenshot', file);
         formData.append('screenshot', file);
       }
 

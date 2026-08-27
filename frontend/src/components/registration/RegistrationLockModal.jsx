@@ -210,6 +210,7 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
         uploadData.append('registrationId', registrationRecord.registrationId);
         uploadData.append('transactionId', utr);
         uploadData.append('amount', feeAmount);
+        uploadData.append('paymentScreenshot', paymentFile);
         uploadData.append('screenshot', paymentFile);
 
         console.log("[PAYMENT DEBUG]", {
