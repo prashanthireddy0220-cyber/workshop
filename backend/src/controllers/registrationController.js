@@ -250,12 +250,19 @@ const lockSeat = async (req, res) => {
         });
       }
 
-      // If active lock exists, extend/refresh lock
+      // If active lock exists, extend/refresh lock and update details
       const lockMinutes = parseInt(process.env.SEAT_LOCK_MINUTES || '10', 10);
       if (existingReg.seatStatus === 'LOCKED' && existingReg.lockExpiresAt > now) {
         const lockDuration = lockMinutes * 60 * 1000;
         existingReg.lockedAt = now;
         existingReg.lockExpiresAt = new Date(now.getTime() + lockDuration);
+        if (fullName) existingReg.fullName = fullName;
+        if (phone) existingReg.phone = phone;
+        if (studentId) existingReg.studentId = studentId;
+        if (department) existingReg.department = department;
+        if (year) existingReg.year = year;
+        if (section) existingReg.section = section;
+        if (residency) existingReg.residency = residency;
         await existingReg.save();
 
         return res.status(200).json({
@@ -377,30 +384,50 @@ const confirmPayment = async (req, res) => {
       });
     }
 
-    const registration = await Registration.findOne({
-      $or: [
-        { registrationId },
-        { userId }
-      ]
-    });
-
-    if (!registration) {
-      return res.status(404).json({ success: false, message: 'Registration session not found.' });
+    let registration = null;
+    if (registrationId) {
+      registration = await Registration.findOne({ registrationId });
+    }
+    if (!registration && userId) {
+      registration = await Registration.findOne({ userId });
     }
 
     const now = new Date();
     const lockMinutes = parseInt(process.env.SEAT_LOCK_MINUTES || '10', 10);
-    if (registration.seatStatus === 'LOCKED' && registration.lockExpiresAt < now) {
-      return res.status(400).json({
-        success: false,
-        message: `Your ${lockMinutes}-minute seat lock has expired. Please initiate registration again.`
-      });
-    }
+    const lockExpiresAt = new Date(now.getTime() + lockMinutes * 60 * 1000);
 
-    // Keep payment status as PENDING for admin manual verification
-    registration.paymentStatus = 'PENDING';
-    registration.status = 'PAYMENT_SUBMITTED';
-    await registration.save();
+    if (!registration) {
+      // Auto-create registration for this authenticated student
+      const newRegId = await generateSequentialRegistrationId();
+      registration = await Registration.create({
+        registrationId: newRegId,
+        userId,
+        eventId: event ? event._id : userId,
+        fullName: req.user.name || req.user.email.split('@')[0],
+        email: req.user.email,
+        phone: req.body.phone || '',
+        studentId: req.body.studentId || '',
+        department: req.body.department || 'CSE',
+        year: req.body.year || '3rd Year',
+        section: req.body.section || 'A',
+        residency: req.body.residency || 'Day Scholar',
+        paymentStatus: 'PENDING',
+        seatStatus: 'LOCKED',
+        lockedAt: now,
+        lockExpiresAt,
+        status: 'PAYMENT_SUBMITTED'
+      });
+    } else {
+      // If seat lock was expired, auto-renew since payment is actively being submitted
+      if (registration.seatStatus === 'LOCKED' || !registration.lockExpiresAt || registration.lockExpiresAt < now) {
+        registration.seatStatus = 'LOCKED';
+        registration.lockedAt = now;
+        registration.lockExpiresAt = lockExpiresAt;
+      }
+      registration.paymentStatus = 'PENDING';
+      registration.status = 'PAYMENT_SUBMITTED';
+      await registration.save();
+    }
 
     // Create or update Payment record with PENDING status
     let payment = await Payment.findOne({ registrationId: registration.registrationId });
@@ -409,7 +436,7 @@ const confirmPayment = async (req, res) => {
         registrationId: registration.registrationId,
         userId: registration.userId,
         transactionId: transactionId || `UPI-${Date.now()}`,
-        amount: parseInt(process.env.REGISTRATION_FEE || '250'),
+        amount: parseInt(process.env.REGISTRATION_FEE || '250', 10),
         paymentMethod: paymentMethod || 'UPI',
         status: 'PENDING',
         submittedAt: now

@@ -43,14 +43,18 @@ const uploadToCloudinary = (fileBuffer, mimeType = 'image/png') => {
 const uploadScreenshotOnly = async (req, res) => {
   try {
     const { registrationId, transactionId, amount } = req.body || {};
-    const targetFile = req.file || (req.files && (req.files.paymentScreenshot?.[0] || req.files.screenshot?.[0]));
+    const targetFile = req.file || (req.files && (
+      Array.isArray(req.files)
+        ? (req.files.find(f => f.fieldname === 'paymentScreenshot' || f.fieldname === 'screenshot' || f.fieldname === 'file') || req.files[0])
+        : (req.files.paymentScreenshot?.[0] || req.files.screenshot?.[0] || req.files.file?.[0])
+    ));
 
     console.log('==================================================');
     console.log('[PAYMENT UPLOAD ROUTE HIT]');
     console.log(` -> Timestamp: ${new Date().toISOString()}`);
     console.log(` -> File attached: ${targetFile ? `YES (name=${targetFile.originalname}, size=${targetFile.size}b, mime=${targetFile.mimetype})` : 'NO'}`);
     console.log("req.body:", req.body);
-    console.log("req.file:", targetFile);
+    console.log("req.file:", req.file);
     console.log("req.files:", req.files);
     console.log(` -> Payload: registrationId="${registrationId || ''}", transactionId="${transactionId || ''}"`);
     console.log('==================================================');
@@ -164,24 +168,28 @@ const submitPayment = async (req, res) => {
   let uploadedPublicId = '';
 
   try {
-    const { registrationId, transactionId, amount } = req.body;
+    const { registrationId, transactionId, amount } = req.body || {};
     const userId = req.user ? req.user._id : null;
-    const targetFile = req.file || (req.files && (req.files.paymentScreenshot?.[0] || req.files.screenshot?.[0]));
+    const targetFile = req.file || (req.files && (
+      Array.isArray(req.files)
+        ? (req.files.find(f => f.fieldname === 'paymentScreenshot' || f.fieldname === 'screenshot' || f.fieldname === 'file') || req.files[0])
+        : (req.files.paymentScreenshot?.[0] || req.files.screenshot?.[0] || req.files.file?.[0])
+    ));
 
     console.log('==================================================');
     console.log('[PAYMENT SUBMIT ROUTE HIT]');
     console.log(` -> Timestamp: ${new Date().toISOString()}`);
     console.log(` -> File attached: ${targetFile ? `YES (name=${targetFile.originalname}, size=${targetFile.size}b, mime=${targetFile.mimetype})` : 'NO'}`);
     console.log("req.body:", req.body);
-    console.log("req.file:", targetFile);
+    console.log("req.file:", req.file);
     console.log("req.files:", req.files);
     console.log(` -> Payload: registrationId="${registrationId || ''}", transactionId="${transactionId || ''}"`);
     console.log('==================================================');
 
-    if (!registrationId || !transactionId) {
+    if (!transactionId) {
       return res.status(400).json({
         success: false,
-        message: 'Registration ID and Transaction ID are required.'
+        message: 'Transaction Reference (UTR) ID is required.'
       });
     }
 
@@ -193,15 +201,38 @@ const submitPayment = async (req, res) => {
       });
     }
 
-    let registration = await Registration.findOne({ registrationId });
+    let registration = null;
+    if (registrationId) {
+      registration = await Registration.findOne({ registrationId });
+    }
     if (!registration && userId) {
       registration = await Registration.findOne({ userId });
     }
 
     if (!registration) {
-      return res.status(404).json({
-        success: false,
-        message: 'Matching registration record not found.'
+      if (!userId) {
+        return res.status(404).json({
+          success: false,
+          message: 'Matching registration record not found. Please log in.'
+        });
+      }
+      const count = await Registration.countDocuments();
+      const newRegId = `EDS-WS-${String(count + 1).padStart(3, '0')}`;
+      registration = await Registration.create({
+        registrationId: newRegId,
+        userId,
+        eventId: userId,
+        fullName: (req.user && req.user.name) || (req.user && req.user.email ? req.user.email.split('@')[0] : 'Participant'),
+        email: (req.user && req.user.email) || '',
+        phone: req.body.phone || '',
+        studentId: req.body.studentId || '',
+        department: req.body.department || 'CSE',
+        year: req.body.year || '3rd Year',
+        section: req.body.section || 'A',
+        residency: req.body.residency || 'Day Scholar',
+        paymentStatus: 'PENDING',
+        seatStatus: 'LOCKED',
+        status: 'PAYMENT_SUBMITTED'
       });
     }
 
@@ -210,7 +241,8 @@ const submitPayment = async (req, res) => {
 
     if (targetFile) {
       try {
-        const cloudinaryResult = await uploadToCloudinary(targetFile.buffer);
+        const mimeType = targetFile.mimetype || 'image/png';
+        const cloudinaryResult = await uploadToCloudinary(targetFile.buffer, mimeType);
         upiScreenshotUrl = cloudinaryResult.secure_url;
         upiScreenshotPublicId = cloudinaryResult.public_id;
         uploadedPublicId = cloudinaryResult.public_id;
@@ -237,7 +269,7 @@ const submitPayment = async (req, res) => {
 
       let payment = await Payment.findOne({ registrationId: registration.registrationId });
       if (payment) {
-        if (payment.upiScreenshotPublicId && payment.upiScreenshotPublicId !== upiScreenshotPublicId) {
+        if (payment.upiScreenshotPublicId && payment.upiScreenshotPublicId !== upiScreenshotPublicId && process.env.CLOUDINARY_API_SECRET) {
           try {
             await cloudinary.uploader.destroy(payment.upiScreenshotPublicId);
           } catch (delErr) {
@@ -285,7 +317,7 @@ const submitPayment = async (req, res) => {
     } catch (mongoError) {
       console.error('[MongoDB Payment Save Error]', mongoError);
       
-      if (uploadedPublicId) {
+      if (uploadedPublicId && process.env.CLOUDINARY_API_SECRET) {
         try {
           await cloudinary.uploader.destroy(uploadedPublicId);
         } catch (cleanupErr) {

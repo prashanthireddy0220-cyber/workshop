@@ -5,7 +5,7 @@ import { X, Clock, ShieldCheck, AlertCircle, ArrowRight, CheckCircle2, Lock, QrC
 import PaymentSubmittedPage from './PaymentSubmittedPage';
 
 const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
-  const { user, refreshRegistration } = useAuth();
+  const { user, registrationState, refreshRegistration } = useAuth();
 
   const [step, setStep] = useState(1); // 1: Student Details, 1.5: Confirm Details, 2: Payment, 3: Success Receipt
   const [loading, setLoading] = useState(false);
@@ -33,25 +33,45 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
   const [paymentPreviewUrl, setPaymentPreviewUrl] = useState('');
   const [qrImageFailed, setQrImageFailed] = useState(false);
 
-  // Pre-fill user details from Google profile when user or modal opens
+  // Initialize modal state and prefill data when modal opens
   useEffect(() => {
-    if (user) {
-      setFormData(prev => ({
-        ...prev,
-        fullName: user.displayName || user.name || prev.fullName || '',
-      }));
-    }
-  }, [user, isOpen]);
+    if (!isOpen || !user) return;
 
-  // Reset steps & state when modal opens
-  useEffect(() => {
-    if (isOpen) {
+    const reg = registrationState?.registration;
+    setFormData(prev => ({
+      ...prev,
+      fullName: prev.fullName || reg?.fullName || user.displayName || user.name || '',
+      phone: prev.phone || reg?.phone || '',
+      studentId: prev.studentId || reg?.studentId || '',
+      department: prev.department || reg?.department || 'CSE',
+      year: prev.year || reg?.year || '3rd Year',
+      section: prev.section || reg?.section || '24S01',
+      residency: prev.residency || reg?.residency || 'Day Scholar'
+    }));
+
+    if (reg?.status === 'PAYMENT_SUBMITTED') {
+      setSubmittedRecord(reg);
+      setSubmittedPayment({
+        transactionId: reg.transactionId || 'UPI Submitted',
+        amount: eventDetails?.registrationFee || 250
+      });
+      setStep(3);
+    } else if (reg?.seatStatus === 'LOCKED' && reg?.lockExpiresAt) {
+      const remaining = new Date(reg.lockExpiresAt).getTime() - Date.now();
+      if (remaining > 0) {
+        setLockExpiresAt(reg.lockExpiresAt);
+        setStep(2);
+      } else {
+        setStep(1);
+      }
+    } else {
       setStep(1);
-      setError('');
-      setIsExpired(false);
-      fetchEventDetails();
     }
-  }, [isOpen]);
+
+    setError('');
+    setIsExpired(false);
+    fetchEventDetails();
+  }, [isOpen, user]);
 
   const fetchEventDetails = async () => {
     try {
@@ -192,53 +212,50 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
     setError('');
 
     const feeAmount = eventDetails?.registrationFee || 250;
+    const existingRegId = registrationState?.registration?.registrationId;
 
     try {
-      let registrationRecord = null;
+      // 1. Submit Payment Proof (Single atomic request uploading screenshot & updating registration record)
+      const uploadData = new FormData();
+      if (existingRegId) {
+        uploadData.append('registrationId', existingRegId);
+      }
+      uploadData.append('transactionId', utr);
+      uploadData.append('amount', feeAmount);
+      uploadData.append('paymentScreenshot', paymentFile);
+      uploadData.append('studentId', formData.studentId || '');
+      uploadData.append('phone', formData.phone || '');
+      uploadData.append('department', formData.department || 'CSE');
+      uploadData.append('year', formData.year || '3rd Year');
+      uploadData.append('section', formData.section || '24S01');
+      uploadData.append('residency', formData.residency || 'Day Scholar');
+      uploadData.append('fullName', formData.fullName || user.displayName || user.name || '');
 
-      // 1. Confirm basic registration record
-      const res = await confirmPayment({
+      console.log('[PAYMENT SUBMISSION ATTEMPT]', {
+        registrationId: existingRegId,
         transactionId: utr,
-        paymentMethod: 'UPI'
+        amount: feeAmount,
+        file: paymentFile?.name
       });
 
-      if (res.data.success) {
-        registrationRecord = res.data.registration;
+      const uploadRes = await submitPayment(uploadData);
+
+      if (uploadRes.data && uploadRes.data.success) {
+        await refreshRegistration();
+        const finalReg = uploadRes.data.registration || registrationState?.registration || { registrationId: existingRegId || 'EDS-WS-001', fullName: formData.fullName };
+        const finalPay = uploadRes.data.payment || { transactionId: utr, amount: feeAmount };
         
-        // 2. Mandatorily upload payment screenshot proof to Cloudinary & DB
-        const uploadData = new FormData();
-        uploadData.append('registrationId', registrationRecord.registrationId);
-        uploadData.append('transactionId', utr);
-        uploadData.append('amount', feeAmount);
-        uploadData.append('paymentScreenshot', paymentFile);
-        uploadData.append('screenshot', paymentFile);
-
-        console.log("[PAYMENT DEBUG]", {
-          registrationId: registrationRecord.registrationId,
-          transactionId: utr,
-          screenshotFile: paymentFile,
-          fileName: paymentFile?.name,
-          fileType: paymentFile?.type,
-          fileSize: paymentFile?.size
-        });
-
-        for (const [key, value] of uploadData.entries()) {
-          console.log("[FORM DATA]", key, value);
-        }
-
-        const uploadRes = await submitPayment(uploadData);
-
-        if (uploadRes.data.success) {
-          await refreshRegistration();
-          setSubmittedRecord(registrationRecord);
-          setSubmittedPayment({ transactionId: utr, amount: feeAmount });
-          setStep(3); // Transition to Registration Successful ONLY after screenshot upload succeeds!
-        } else {
-          setError(uploadRes.data.message || 'Failed to upload payment screenshot proof. Please try again.');
-        }
+        setSubmittedRecord(finalReg);
+        setSubmittedPayment(finalPay);
+        setStep(3); // Direct transition to Registration Complete & Receipt
+        
+        if (onSuccess) onSuccess(finalReg);
+      } else {
+        setError(uploadRes.data?.message || 'Failed to submit payment proof. Please try again.');
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Payment submission failed. Please ensure screenshot is attached and UTR is valid.');
+      console.error('[Payment Error]', err);
+      setError(err.response?.data?.message || err.message || 'Payment submission failed. Please ensure screenshot is attached and UTR is valid.');
     } finally {
       setLoading(false);
     }
@@ -650,6 +667,24 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
                 Must be exactly 12 numeric digits from your UPI payment app receipt
               </span>
             </div>
+
+            {error && (
+              <div style={{
+                background: 'rgba(239, 68, 68, 0.15)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: '10px',
+                padding: '12px',
+                marginBottom: '16px',
+                color: '#F87171',
+                fontSize: '0.875rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <AlertCircle size={18} flexShrink={0} />
+                <span>{error}</span>
+              </div>
+            )}
 
             <div style={{ display: 'flex', gap: '12px' }}>
               <button

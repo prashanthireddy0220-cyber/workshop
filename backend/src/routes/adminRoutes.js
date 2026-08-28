@@ -49,7 +49,7 @@ router.delete('/registrations', deleteAllRegistrations);
 router.put('/payments/bulk-verify', bulkApprovePayments);
 router.put('/payments/:id/approve', approvePayment);
 router.put('/payments/:id/reject', rejectPayment);
-router.post('/payments/:id/proof', uploadPaymentScreenshot.single('screenshot'), updatePaymentProofAdmin);
+router.post('/payments/:id/proof', uploadPaymentScreenshot.any(), updatePaymentProofAdmin);
 
 // Event & Config / Settings
 router.put('/event/config', updateEventConfig);

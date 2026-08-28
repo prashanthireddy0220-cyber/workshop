@@ -5,10 +5,10 @@ const { protect } = require('../middleware/authMiddleware');
 const { uploadPaymentScreenshot } = require('../middleware/uploadMiddleware');
 
 // Route 1: Standalone Cloudinary screenshot upload endpoint (Public / Unauthenticated for seamless student registration)
-router.post(['/upload-screenshot', '/upload'], uploadPaymentScreenshot.single('paymentScreenshot'), uploadScreenshotOnly);
+router.post(['/upload-screenshot', '/upload'], uploadPaymentScreenshot.any(), uploadScreenshotOnly);
 
 // Route 2: Full payment submission endpoint
-router.post('/submit', protect, uploadPaymentScreenshot.single('paymentScreenshot'), submitPayment);
+router.post('/submit', protect, uploadPaymentScreenshot.any(), submitPayment);
 
 // Route 3: Get payment details by registration ID
 router.get('/:registrationId', protect, getPaymentByRegistrationId);

@@ -727,11 +727,17 @@ const updatePaymentProofAdmin = async (req, res) => {
   try {
     const { id } = req.params;
     const { screenshotUrl, transactionId } = req.body;
+    const targetFile = req.file || (req.files && (
+      Array.isArray(req.files)
+        ? (req.files.find(f => f.fieldname === 'paymentScreenshot' || f.fieldname === 'screenshot' || f.fieldname === 'file') || req.files[0])
+        : (req.files.screenshot?.[0] || req.files.paymentScreenshot?.[0] || req.files.file?.[0])
+    ));
 
     let upiScreenshotUrl = screenshotUrl || '';
-    if (req.file) {
+    if (targetFile) {
       try {
-        const cloudinaryResult = await uploadToCloudinary(req.file.buffer);
+        const mimeType = targetFile.mimetype || 'image/png';
+        const cloudinaryResult = await uploadToCloudinary(targetFile.buffer, mimeType);
         upiScreenshotUrl = cloudinaryResult.secure_url;
       } catch (uploadError) {
         console.error('[Admin Upload Error]', uploadError);

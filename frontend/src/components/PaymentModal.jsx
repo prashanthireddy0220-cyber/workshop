@@ -61,7 +61,6 @@ const PaymentModal = ({ isOpen, onClose, registrationId, onSuccess }) => {
       formData.append('transactionId', utr);
       formData.append('amount', 250);
       formData.append('paymentScreenshot', file);
-      formData.append('screenshot', file);
 
       console.log("[PAYMENT DEBUG]", {
         registrationId,

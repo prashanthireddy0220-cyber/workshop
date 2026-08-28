@@ -8,8 +8,7 @@ import ScheduleSection from './components/ScheduleSection';
 import EventInfoSection from './components/EventInfoSection';
 import Footer from './components/Footer';
 import AuthModal from './components/AuthModal';
-import RegistrationModal from './components/RegistrationModal';
-import PaymentModal from './components/PaymentModal';
+import RegistrationLockModal from './components/registration/RegistrationLockModal';
 import ParticipantDashboard from './components/ParticipantDashboard';
 import AdminPortal from './components/admin/AdminPortal';
 import AttendanceScannerPage from './components/attendance/AttendanceScannerPage';
@@ -19,7 +18,7 @@ import RegistrationSection from './components/registration/RegistrationSection';
 import TokenPassPage from './components/registration/TokenPassPage';
 
 const AppContent = () => {
-  const { user, registrationState, loading: authLoading } = useAuth();
+  const { user, registrationState, refreshRegistration, loading: authLoading } = useAuth();
   
   // Page Transition Loading state
   const [pageLoading, setPageLoading] = useState(true);
@@ -52,10 +51,7 @@ const AppContent = () => {
   // Modal visibility states for public student view
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [regModalOpen, setRegModalOpen] = useState(false);
-  const [payModalOpen, setPayModalOpen] = useState(false);
   const [dashboardOpen, setDashboardOpen] = useState(false);
-
-  const [activeRegistrationId, setActiveRegistrationId] = useState('');
 
   // Reusable trigger transition helper
   const triggerTransition = (actionCallback) => {
@@ -63,14 +59,19 @@ const AppContent = () => {
     setTimeout(() => {
       if (actionCallback) actionCallback();
       setPageLoading(false);
-    }, 500);
+    }, 400);
   };
 
   const handleRegisterClick = () => {
     triggerTransition(() => {
       if (!user) {
         setAuthModalOpen(true);
-      } else if (registrationState?.registration?.seatStatus === 'CONFIRMED' || registrationState?.registration?.status === 'PAYMENT_VERIFIED') {
+      } else if (
+        registrationState?.registration?.seatStatus === 'CONFIRMED' ||
+        registrationState?.registration?.paymentStatus === 'PAID' ||
+        registrationState?.registration?.paymentStatus === 'VERIFIED' ||
+        registrationState?.registration?.status === 'PAYMENT_VERIFIED'
+      ) {
         setDashboardOpen(true);
       } else {
         setRegModalOpen(true);
@@ -85,19 +86,8 @@ const AppContent = () => {
     });
   };
 
-  const handleRegistrationSuccess = (newRegistration) => {
-    triggerTransition(() => {
-      setActiveRegistrationId(newRegistration.registrationId);
-      setRegModalOpen(false);
-      setPayModalOpen(true);
-    });
-  };
-
-  const handlePaymentSuccess = () => {
-    triggerTransition(() => {
-      setPayModalOpen(false);
-      setDashboardOpen(true);
-    });
+  const handleRegistrationSuccess = async () => {
+    await refreshRegistration();
   };
 
   // If visiting /registration/token/:registrationId -> Render Standalone Token Pass Page
@@ -154,9 +144,11 @@ const AppContent = () => {
       <TopicsSection />
       <ScheduleSection />
       
-      {/* New Registration Section */}
+      {/* Registration Section */}
       <RegistrationSection
+        onOpenRegistration={handleRegisterClick}
         onOpenDashboard={() => triggerTransition(() => setDashboardOpen(true))}
+        onOpenAuth={() => triggerTransition(() => setAuthModalOpen(true))}
       />
 
       <EventInfoSection />
@@ -169,24 +161,17 @@ const AppContent = () => {
         onSuccess={handleAuthSuccess}
       />
 
-      <RegistrationModal
+      <RegistrationLockModal
         isOpen={regModalOpen}
         onClose={() => setRegModalOpen(false)}
         onSuccess={handleRegistrationSuccess}
-      />
-
-      <PaymentModal
-        isOpen={payModalOpen}
-        onClose={() => setPayModalOpen(false)}
-        registrationId={activeRegistrationId || registrationState?.registration?.registrationId}
-        onSuccess={handlePaymentSuccess}
       />
 
       <ParticipantDashboard
         isOpen={dashboardOpen}
         onClose={() => setDashboardOpen(false)}
         onOpenRegistration={() => triggerTransition(() => { setDashboardOpen(false); setRegModalOpen(true); })}
-        onOpenPayment={() => triggerTransition(() => { setDashboardOpen(false); setPayModalOpen(true); })}
+        onOpenPayment={() => triggerTransition(() => { setDashboardOpen(false); setRegModalOpen(true); })}
       />
     </div>
   );

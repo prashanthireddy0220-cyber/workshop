@@ -163,7 +163,7 @@ app.all(['/api/payments/upload-screenshot', '/payments/upload-screenshot', '/api
   const { uploadPaymentScreenshot } = require('./src/middleware/uploadMiddleware');
   const { uploadScreenshotOnly } = require('./src/controllers/paymentController');
 
-  return uploadPaymentScreenshot.single('paymentScreenshot')(req, res, (err) => {
+  return uploadPaymentScreenshot.any()(req, res, (err) => {
     if (err) return res.status(400).json({ success: false, message: err.message });
     return uploadScreenshotOnly(req, res, next);
   });

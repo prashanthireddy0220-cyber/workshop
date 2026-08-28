@@ -9,7 +9,7 @@ import RegistrationSuccessCard from './RegistrationSuccessCard';
 import RegistrationLockModal from './RegistrationLockModal';
 import { ArrowRight, Sparkles, ShieldCheck, CheckCircle2, Lock } from 'lucide-react';
 
-const RegistrationSection = ({ onOpenDashboard }) => {
+const RegistrationSection = ({ onOpenRegistration, onOpenDashboard, onOpenAuth }) => {
   const { user, registrationState, refreshRegistration } = useAuth();
 
   const [eventStatus, setEventStatus] = useState({
@@ -58,9 +58,17 @@ const RegistrationSection = ({ onOpenDashboard }) => {
   }, []);
 
   const handleContinueClick = () => {
+    if (onOpenRegistration) {
+      onOpenRegistration();
+      return;
+    }
+
     if (!user) {
-      // Trigger Google Login
-      document.querySelector('.glass-card button')?.click();
+      if (onOpenAuth) {
+        onOpenAuth();
+      } else {
+        document.querySelector('.glass-card button')?.click();
+      }
       return;
     }
 
@@ -246,12 +254,14 @@ const RegistrationSection = ({ onOpenDashboard }) => {
           </div>
         </div>
 
-        {/* Registration Lock & Payment Modal */}
-        <RegistrationLockModal
-          isOpen={modalOpen}
-          onClose={() => setModalOpen(false)}
-          onSuccess={handleSuccess}
-        />
+        {/* Registration Lock & Payment Modal fallback */}
+        {!onOpenRegistration && (
+          <RegistrationLockModal
+            isOpen={modalOpen}
+            onClose={() => setModalOpen(false)}
+            onSuccess={handleSuccess}
+          />
+        )}
 
       </div>
     </section>
