@@ -32,6 +32,7 @@ const {
 } = require('../controllers/adminController');
 const { protect } = require('../middleware/authMiddleware');
 const { adminOnly } = require('../middleware/adminMiddleware');
+const { uploadPaymentScreenshot } = require('../middleware/uploadMiddleware');
 
 router.use(protect);
 router.use(adminOnly);
@@ -48,6 +49,7 @@ router.delete('/registrations', deleteAllRegistrations);
 router.put('/payments/bulk-verify', bulkApprovePayments);
 router.put('/payments/:id/approve', approvePayment);
 router.put('/payments/:id/reject', rejectPayment);
+router.post('/payments/:id/proof', uploadPaymentScreenshot.any(), updatePaymentProofAdmin);
 
 // Event & Config / Settings
 router.put('/event/config', updateEventConfig);

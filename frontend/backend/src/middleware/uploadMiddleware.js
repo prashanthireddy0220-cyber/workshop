@@ -3,7 +3,15 @@ const multer = require('multer');
 const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
-  const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/pjpeg', 'image/png', 'image/x-png', 'image/webp', 'application/octet-stream'];
+  const allowedMimeTypes = [
+    'image/jpeg',
+    'image/jpg',
+    'image/pjpeg',
+    'image/png',
+    'image/x-png',
+    'image/webp',
+    'application/octet-stream'
+  ];
   const ext = (file.originalname || '').toLowerCase();
   const hasValidExt = /\.(jpe?g|png|webp)$/i.test(ext);
 
@@ -16,7 +24,7 @@ const fileFilter = (req, file, cb) => {
 
 const uploadPaymentScreenshot = multer({
   storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB max
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB max
   fileFilter: fileFilter
 });
 
