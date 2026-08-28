@@ -38,11 +38,18 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
     if (!isOpen || !user) return;
 
     const reg = registrationState?.registration;
+    const rawName = String(user.displayName || user.name || '').trim();
+    const isNameNumeric = /^\d+$/.test(rawName);
+    const googleName = (!isNameNumeric && rawName) ? rawName : '';
+    const studentNum = (user.email && /^\d+$/.test(user.email.split('@')[0]))
+      ? user.email.split('@')[0]
+      : (isNameNumeric ? rawName : '');
+
     setFormData(prev => ({
       ...prev,
-      fullName: prev.fullName || reg?.fullName || user.displayName || user.name || '',
+      fullName: prev.fullName || reg?.fullName || googleName || '',
       phone: prev.phone || reg?.phone || '',
-      studentId: prev.studentId || reg?.studentId || '',
+      studentId: prev.studentId || reg?.studentId || studentNum || '',
       department: prev.department || reg?.department || 'CSE',
       year: prev.year || reg?.year || '3rd Year',
       section: prev.section || reg?.section || '24S01',
@@ -353,11 +360,12 @@ const RegistrationLockModal = ({ isOpen, onClose, onSuccess }) => {
           <form onSubmit={handleNextToConfirm}>
             <div className="form-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
               <div className="form-group">
-                <label>Participant Name (Google)</label>
+                <label>Participant Full Name</label>
                 <input
                   type="text"
                   name="fullName"
                   className="form-control"
+                  placeholder="e.g. Your Full Name"
                   value={formData.fullName}
                   onChange={handleChange}
                   required
