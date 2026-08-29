@@ -35,16 +35,27 @@ const getEventDetails = async (req, res) => {
 const getEventStatus = async (req, res) => {
   try {
     let event = await Event.findOne();
-    
-    const capacity = event ? event.capacity : parseInt(process.env.EVENT_CAPACITY || '200');
+
+    const capacity = event ? (event.registrationLimit || event.capacity || parseInt(process.env.EVENT_CAPACITY || '200')) : parseInt(process.env.EVENT_CAPACITY || '200');
     const registrationFee = event ? event.registrationFee : parseInt(process.env.REGISTRATION_FEE || '250');
     const seatLockDurationMinutes = parseInt(process.env.SEAT_LOCK_MINUTES || '10');
     const registrationStart = event?.registrationStart || '2026-08-01T00:00:00.000Z';
-    const registrationEnd = event?.registrationEnd || event?.registrationDeadline || '2026-08-28T23:59:59.000Z';
-    const registrationOpen = event ? event.registrationOpen : true;
+    let registrationEnd = event?.registrationEnd || event?.registrationDeadline || '2026-09-16T23:59:59.000Z';
+    const isExplicitlyOpen = event ? event.registrationOpen !== false : true;
 
     const now = new Date();
-    const endDate = new Date(registrationEnd);
+    let endDate = new Date(registrationEnd);
+
+    // If registration is explicitly OPEN by admin but stored end date is in the past, auto-extend end date
+    if (isExplicitlyOpen && (isNaN(endDate.getTime()) || now > endDate)) {
+      registrationEnd = '2026-09-16T23:59:59.000Z';
+      endDate = new Date(registrationEnd);
+      if (event) {
+        event.registrationEnd = registrationEnd;
+        event.registrationDeadline = registrationEnd;
+        await event.save().catch(() => {});
+      }
+    }
 
     // Count confirmed registrations
     const confirmedCount = await Registration.countDocuments({
@@ -55,7 +66,7 @@ const getEventStatus = async (req, res) => {
       ]
     });
 
-    // Count active locked seats (lockedAt within seatLockDurationMinutes OR lockExpiresAt > now)
+    // Count active locked seats
     const lockedCount = await Registration.countDocuments({
       seatStatus: 'LOCKED',
       lockExpiresAt: { $gt: now }
@@ -66,7 +77,7 @@ const getEventStatus = async (req, res) => {
 
     // Determine status badge: CLOSED, FULL, ALMOST FULL, FILLING FAST, OPEN
     let statusText = 'OPEN';
-    if (now > endDate || !registrationOpen) {
+    if (!isExplicitlyOpen || (now > endDate && !isExplicitlyOpen)) {
       statusText = 'CLOSED';
     } else if (confirmedCount + lockedCount >= capacity || available <= 0) {
       statusText = 'FULL';
@@ -77,6 +88,8 @@ const getEventStatus = async (req, res) => {
     } else {
       statusText = 'OPEN';
     }
+
+    const isRegistrationAllowed = isExplicitlyOpen && statusText !== 'CLOSED' && statusText !== 'FULL';
 
     return res.status(200).json({
       success: true,
@@ -92,7 +105,7 @@ const getEventStatus = async (req, res) => {
       registrationEnd,
       serverTime: now.toISOString(),
       status: statusText,
-      registrationOpen: registrationOpen && statusText !== 'CLOSED' && statusText !== 'FULL'
+      registrationOpen: isRegistrationAllowed
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });

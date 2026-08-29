@@ -344,7 +344,7 @@ const AttendanceScannerPage = () => {
   };
 
   // =========================================================================
-  // VIEW 1: VOLUNTEER LOGIN SCREEN (If not authenticated)
+  // VIEW 1: VOLUNTEER ATTENDANCE 4-DIGIT PIN LOGIN SCREEN
   // =========================================================================
   if (!volunteer) {
     return (
@@ -382,13 +382,13 @@ const AttendanceScannerPage = () => {
               margin: '0 auto 16px auto',
               color: '#38BDF8'
             }}>
-              <QrCode size={32} />
+              <Shield size={32} />
             </div>
             <h1 style={{ fontSize: '1.45rem', fontWeight: 900, color: '#FFFFFF', margin: 0, letterSpacing: '-0.01em' }}>
-              ATTENDANCE VOLUNTEER LOGIN
+              ATTENDANCE ACCESS PIN
             </h1>
             <p style={{ fontSize: '0.85rem', color: '#94A3B8', marginTop: '6px', fontWeight: 600 }}>
-              KARE IEEE • Live Attendance Portal
+              Enter 4-Digit Access PIN to unlock attendance scanner
             </p>
           </div>
 
@@ -412,54 +412,34 @@ const AttendanceScannerPage = () => {
             </div>
           )}
 
-          {/* Login Form */}
+          {/* 4-Digit PIN Form */}
           <form onSubmit={handleLoginSubmit} autoComplete="off" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#CBD5E1', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                Email / Username
-              </label>
-              <input
-                type="text"
-                name="volunteer_identity_no_autofill"
-                autoComplete="off"
-                placeholder="volunteer@example.com"
-                value={loginForm.email}
-                onChange={(e) => setLoginForm(prev => ({ ...prev, email: e.target.value }))}
-                required
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  borderRadius: '14px',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  background: '#0B132B',
-                  color: '#FFFFFF',
-                  fontSize: '0.92rem',
-                  outline: 'none',
-                  boxSizing: 'border-box'
-                }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#CBD5E1', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                Password
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#CBD5E1', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em', textAlign: 'center' }}>
+                4-Digit Access PIN (Default: 2026)
               </label>
               <input
                 type="password"
-                name="volunteer_password_no_autofill"
-                autoComplete="new-password"
-                placeholder="••••••••"
-                value={loginForm.password}
-                onChange={(e) => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
+                maxLength="6"
+                autoComplete="off"
+                placeholder="••••"
+                value={loginForm.password || loginForm.email}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setLoginForm({ email: val, password: val });
+                }}
                 required
                 style={{
                   width: '100%',
-                  padding: '12px 16px',
-                  borderRadius: '14px',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  padding: '14px 16px',
+                  borderRadius: '16px',
+                  border: '1px solid rgba(56, 189, 248, 0.4)',
                   background: '#0B132B',
-                  color: '#FFFFFF',
-                  fontSize: '0.92rem',
+                  color: '#38BDF8',
+                  fontSize: '1.6rem',
+                  fontWeight: 900,
+                  letterSpacing: '0.3em',
+                  textAlign: 'center',
                   outline: 'none',
                   boxSizing: 'border-box'
                 }}
@@ -482,12 +462,12 @@ const AttendanceScannerPage = () => {
                 marginTop: '6px'
               }}
             >
-              {loginLoading ? 'Logging in...' : 'LOGIN'}
+              {loginLoading ? 'UNLOCKING...' : 'ENTER ATTENDANCE PORTAL'}
             </button>
           </form>
 
           <div style={{ marginTop: '24px', textAlign: 'center', fontSize: '0.78rem', color: '#64748B' }}>
-            Authorized attendance volunteer credentials required. Contact Admin if you need an account.
+            Enter valid 4-digit Attendance Access PIN (Default: <strong>2026</strong>). Contact Admin for help.
           </div>
         </div>
       </div>

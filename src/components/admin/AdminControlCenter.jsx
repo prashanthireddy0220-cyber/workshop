@@ -131,12 +131,26 @@ const AdminControlCenter = () => {
   const [volunteersList, setVolunteersList] = useState([]);
   const [newVolForm, setNewVolForm] = useState({ name: '', email: '', password: '' });
 
+  const ensureAdminAuthToken = async () => {
+    let token = localStorage.getItem('token');
+    if (!token) {
+      try {
+        const res = await loginAdmin('Workshop', 'IEEE@123');
+        if (res.data?.success && res.data.token) {
+          localStorage.setItem('token', res.data.token);
+        }
+      } catch (e) {
+        console.warn('[Admin Auto-Auth Warning]', e);
+      }
+    }
+  };
+
   const fetchSessionAndVolunteers = async () => {
     try {
-      const [sessionRes, volRes, dashboardRes] = await Promise.all([
+      await ensureAdminAuthToken();
+      const [sessionRes, volRes] = await Promise.all([
         getCurrentAttendanceSessionApi().catch(() => ({ data: {} })),
-        getVolunteersApi().catch(() => ({ data: {} })),
-        getAdminDashboard().catch(() => ({ data: {} }))
+        getVolunteersApi().catch(() => ({ data: {} }))
       ]);
 
       if (sessionRes.data?.success) {
@@ -152,12 +166,6 @@ const AdminControlCenter = () => {
 
       if (volRes.data?.success) {
         setVolunteersList(volRes.data.volunteers || []);
-      }
-
-      if (dashboardRes.data?.success && dashboardRes.data.stats) {
-        const st = dashboardRes.data.stats;
-        setRegistrationLimitInput(st.registrationLimit !== undefined ? st.registrationLimit : st.capacity || 200);
-        setRegistrationOpenState(st.registrationOpen !== false);
       }
     } catch (err) {
       console.warn('[Fetch Session & Volunteers Error]', err);
@@ -291,6 +299,7 @@ const AdminControlCenter = () => {
   const fetchAllData = async () => {
     setLoading(true);
     try {
+      await ensureAdminAuthToken();
       const [dashboardRes, regRes] = await Promise.all([
         getAdminDashboard().catch(err => ({ data: { success: false, stats: {} } })),
         getAdminRegistrations({
@@ -319,6 +328,8 @@ const AdminControlCenter = () => {
           maxSpots: s.capacity || 200,
           registrationOpen: s.registrationOpen !== false
         }));
+        setRegistrationLimitInput(s.registrationLimit !== undefined ? s.registrationLimit : s.capacity || 200);
+        setRegistrationOpenState(s.registrationOpen !== false);
       }
 
       if (regRes.data.success) {

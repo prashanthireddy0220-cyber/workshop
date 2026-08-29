@@ -7,6 +7,10 @@ const attendanceSessionSchema = new mongoose.Schema(
       required: true,
       default: 'IEEE Workshop Attendance'
     },
+    qrToken: {
+      type: String,
+      default: ''
+    },
     status: {
       type: String,
       enum: ['ACTIVE', 'CLOSED'],
@@ -21,12 +25,20 @@ const attendanceSessionSchema = new mongoose.Schema(
       type: Date,
       default: null
     },
+    expiresAt: {
+      type: Date,
+      default: null
+    },
     startedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       default: null
     },
     presentCount: {
+      type: Number,
+      default: 0
+    },
+    totalEligible: {
       type: Number,
       default: 0
     }

@@ -21,6 +21,7 @@ const API_BASE = getBaseUrl();
 
 const api = axios.create({
   baseURL: API_BASE,
+  timeout: 15000,
   headers: {
     'Content-Type': 'application/json'
   }
@@ -147,6 +148,7 @@ export const createVolunteerApi = (data) => api.post('/attendance/volunteers', d
 export const updateVolunteerStatusApi = (id, data) => api.put(`/attendance/volunteers/${id}`, data);
 export const deleteVolunteerApi = (id) => api.delete(`/attendance/volunteers/${id}`);
 export const getAttendanceSessionHistoryApi = () => api.get('/attendance/sessions');
+export const getAttendanceSessionRecordsApi = (sessionId) => api.get(`/attendance/sessions/${sessionId}/records`);
 
 // Admin Settings API
 export const updateRegistrationSettingsApi = (settings) => api.put('/admin/registration-settings', settings);

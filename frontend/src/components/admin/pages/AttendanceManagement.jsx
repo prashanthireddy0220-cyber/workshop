@@ -67,13 +67,15 @@ const AttendanceManagement = () => {
     document.body.removeChild(link);
   };
 
+  const isPresent = (r) => r.attendance === true || r.attendance === 'PRESENT';
+
   const filteredList = registrations.filter((r) => {
-    if (filterStatus === 'PRESENT') return r.attendance === true;
-    if (filterStatus === 'ABSENT') return r.attendance !== true;
+    if (filterStatus === 'PRESENT') return isPresent(r);
+    if (filterStatus === 'ABSENT') return !isPresent(r);
     return true;
   });
 
-  const presentCount = registrations.filter((r) => r.attendance === true).length;
+  const presentCount = registrations.filter((r) => isPresent(r)).length;
   const totalCount = registrations.length;
   const attendanceRate = totalCount > 0 ? ((presentCount / totalCount) * 100).toFixed(1) : 0;
 

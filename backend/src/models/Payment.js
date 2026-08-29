@@ -57,4 +57,9 @@ const paymentSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+paymentSchema.index({ registrationId: 1 });
+paymentSchema.index({ userId: 1 });
+paymentSchema.index({ status: 1 });
+
 module.exports = mongoose.model('Payment', paymentSchema);
+

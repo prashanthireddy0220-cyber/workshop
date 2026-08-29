@@ -102,5 +102,10 @@ const registrationSchema = new mongoose.Schema(
 
 // Prevent duplicate active registration for same user & event
 registrationSchema.index({ userId: 1, eventId: 1 }, { unique: true });
+registrationSchema.index({ status: 1 });
+registrationSchema.index({ paymentStatus: 1 });
+registrationSchema.index({ seatStatus: 1 });
+registrationSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('Registration', registrationSchema);
+

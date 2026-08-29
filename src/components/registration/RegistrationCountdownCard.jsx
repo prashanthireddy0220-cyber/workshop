@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Clock, AlertCircle } from 'lucide-react';
 
 const RegistrationCountdownCard = ({
-  registrationEnd = '2026-08-28T23:59:59.000Z',
+  registrationEnd = '2026-09-16T23:59:59.000Z',
   serverTime = null
 }) => {
   const [timeLeft, setTimeLeft] = useState({

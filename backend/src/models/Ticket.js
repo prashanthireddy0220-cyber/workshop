@@ -44,4 +44,7 @@ const ticketSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+ticketSchema.index({ registrationId: 1 });
+
 module.exports = mongoose.model('Ticket', ticketSchema);
+

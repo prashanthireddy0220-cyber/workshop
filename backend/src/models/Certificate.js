@@ -34,4 +34,7 @@ const certificateSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+certificateSchema.index({ registrationId: 1 });
+
 module.exports = mongoose.model('Certificate', certificateSchema);
+

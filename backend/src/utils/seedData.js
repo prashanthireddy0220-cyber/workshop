@@ -69,6 +69,121 @@ const seedDB = async () => {
       console.log('[Seed] Workshop Event initialized');
     }
 
+    // 3. Seed Sample Student Registrations (if DB collection is empty)
+    const Registration = require('../models/Registration');
+    const Payment = require('../models/Payment');
+    const Ticket = require('../models/Ticket');
+
+    const regCount = await Registration.countDocuments();
+    if (regCount === 0) {
+      const sampleStudents = [
+        {
+          registrationId: 'REG-KLU-2026-1001',
+          fullName: 'Aarav Sharma',
+          email: 'aarav.sharma@klu.ac.in',
+          phone: '9876543210',
+          studentId: '9921004101',
+          department: 'CSE',
+          year: '3rd Year',
+          section: '24S01',
+          residency: 'Hosteller',
+          status: 'PAYMENT_VERIFIED',
+          seatStatus: 'CONFIRMED',
+          paymentStatus: 'VERIFIED',
+          attendance: true
+        },
+        {
+          registrationId: 'REG-KLU-2026-1002',
+          fullName: 'Priya Ananth',
+          email: 'priya.ananth@klu.ac.in',
+          phone: '9876543211',
+          studentId: '9921004102',
+          department: 'ECE',
+          year: '3rd Year',
+          section: '24S02',
+          residency: 'Day Scholar',
+          status: 'PAYMENT_VERIFIED',
+          seatStatus: 'CONFIRMED',
+          paymentStatus: 'VERIFIED',
+          attendance: false
+        },
+        {
+          registrationId: 'REG-KLU-2026-1003',
+          fullName: 'Karthik Raja',
+          email: 'karthik.raja@klu.ac.in',
+          phone: '9876543212',
+          studentId: '9921004103',
+          department: 'AIDS',
+          year: '2nd Year',
+          section: '24S03',
+          residency: 'Hosteller',
+          status: 'PAYMENT_SUBMITTED',
+          seatStatus: 'LOCKED',
+          paymentStatus: 'PENDING',
+          attendance: false
+        },
+        {
+          registrationId: 'REG-KLU-2026-1004',
+          fullName: 'Sneha Reddy',
+          email: 'sneha.reddy@klu.ac.in',
+          phone: '9876543213',
+          studentId: '9921004104',
+          department: 'IT',
+          year: '4th Year',
+          section: '24S01',
+          residency: 'Day Scholar',
+          status: 'PAYMENT_VERIFIED',
+          seatStatus: 'CONFIRMED',
+          paymentStatus: 'VERIFIED',
+          attendance: true
+        },
+        {
+          registrationId: 'REG-KLU-2026-1005',
+          fullName: 'Vikram Sundaram',
+          email: 'vikram.sundaram@klu.ac.in',
+          phone: '9876543214',
+          studentId: '9921004105',
+          department: 'EEE',
+          year: '3rd Year',
+          section: '24S02',
+          residency: 'Hosteller',
+          status: 'PAYMENT_VERIFIED',
+          seatStatus: 'CONFIRMED',
+          paymentStatus: 'VERIFIED',
+          attendance: false
+        }
+      ];
+
+      for (const student of sampleStudents) {
+        const createdReg = await Registration.create({
+          ...student,
+          userId: admin._id,
+          eventId: event._id
+        });
+
+        if (student.paymentStatus === 'VERIFIED') {
+          const utr = `UTR-${Math.floor(100000000000 + Math.random() * 900000000000)}`;
+          await Payment.create({
+            registrationId: student.registrationId,
+            userId: admin._id,
+            transactionId: utr,
+            utrNumber: utr,
+            amount: 250,
+            status: 'VERIFIED',
+            paymentMethod: 'UPI'
+          });
+
+          await Ticket.create({
+            registrationId: student.registrationId,
+            ticketId: `TKT-${student.registrationId}`,
+            qrToken: student.registrationId,
+            status: student.attendance ? 'USED' : 'ISSUED'
+          });
+        }
+      }
+      console.log(`[Seed] Seeded ${sampleStudents.length} sample student registration records!`);
+    }
+
     console.log('[Seed] DB Seeding Complete!');
     process.exit(0);
   } catch (error) {

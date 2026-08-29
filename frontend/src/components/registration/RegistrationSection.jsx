@@ -20,7 +20,7 @@ const RegistrationSection = ({ onOpenRegistration, onOpenDashboard, onOpenAuth }
     status: 'OPEN',
     registrationFee: 300,
     registrationStart: '2026-08-01T00:00:00.000Z',
-    registrationEnd: '2026-08-28T23:59:59.000Z',
+    registrationEnd: '2026-09-16T23:59:59.000Z',
     serverTime: new Date().toISOString(),
     registrationOpen: true
   });
@@ -40,7 +40,7 @@ const RegistrationSection = ({ onOpenRegistration, onOpenDashboard, onOpenAuth }
           status: res.data.status || 'OPEN',
           registrationFee: res.data.registrationFee || 300,
           registrationStart: res.data.registrationStart || '2026-08-01T00:00:00.000Z',
-          registrationEnd: res.data.registrationEnd || '2026-08-28T23:59:59.000Z',
+          registrationEnd: res.data.registrationEnd || '2026-09-16T23:59:59.000Z',
           serverTime: res.data.serverTime || new Date().toISOString(),
           registrationOpen: res.data.registrationOpen !== false
         });
