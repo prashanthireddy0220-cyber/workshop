@@ -25,7 +25,9 @@ export const AuthProvider = ({ children }) => {
           displayName: u.displayName || u.name,
           photoURL: u.photoURL || u.profilePhoto
         });
-        await refreshRegistration();
+        setLoading(false);
+        refreshRegistration().catch(() => {});
+        return;
       }
     } catch (err) {
       console.warn('[Auth Context] Token expired or invalid, logging out.');
@@ -76,7 +78,7 @@ export const AuthProvider = ({ children }) => {
         };
 
         setUser(userData);
-        await refreshRegistration();
+        refreshRegistration().catch(() => {});
         return res.data;
       }
     } catch (err) {
@@ -109,7 +111,7 @@ export const AuthProvider = ({ children }) => {
           photoURL: res.data.user.photoURL || res.data.user.profilePhoto
         };
         setUser(userData);
-        await refreshRegistration();
+        refreshRegistration().catch(() => {});
         return res.data;
       }
     } catch (err) {

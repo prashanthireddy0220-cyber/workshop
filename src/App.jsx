@@ -36,7 +36,7 @@ const AppContent = () => {
       setPageLoading(false);
       return;
     }
-    const timer = setTimeout(() => {
+    if (!authLoading) {
       setPageLoading(false);
       if (isMyRegistrationsRoute && !isTokenRoute) {
         if (user) {
@@ -45,9 +45,8 @@ const AppContent = () => {
           setAuthModalOpen(true);
         }
       }
-    }, 4300); // 4.3s display + 0.7s smooth fade out = 5 seconds total
-    return () => clearTimeout(timer);
-  }, [user, isMyRegistrationsRoute, isTokenRoute, isAdminRoute]);
+    }
+  }, [authLoading, user, isMyRegistrationsRoute, isTokenRoute, isAdminRoute]);
 
   // Modal visibility states for public student view
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -59,11 +58,7 @@ const AppContent = () => {
 
   // Reusable trigger transition helper
   const triggerTransition = (actionCallback) => {
-    setPageLoading(true);
-    setTimeout(() => {
-      if (actionCallback) actionCallback();
-      setPageLoading(false);
-    }, 500);
+    if (actionCallback) actionCallback();
   };
 
   const handleRegisterClick = () => {

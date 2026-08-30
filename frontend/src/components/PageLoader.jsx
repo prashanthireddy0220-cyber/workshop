@@ -124,27 +124,33 @@ const PageLoader = ({ isLoading = false, duration = 800, onComplete }) => {
           <div
             style={{
               position: 'absolute',
-              inset: '-12px',
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(249,115,22,0.3) 0%, rgba(56,189,248,0.1) 70%, transparent 100%)',
-              filter: 'blur(16px)',
+              inset: '-10px',
+              borderRadius: '24px',
+              background: 'radial-gradient(circle, rgba(249,115,22,0.22) 0%, rgba(56,189,248,0.08) 70%, transparent 100%)',
+              filter: 'blur(12px)',
               animation: 'glowPulse 2s ease-in-out infinite alternate'
             }}
           />
           <div style={{
             background: '#FFFFFF',
-            padding: '12px 24px',
-            borderRadius: '20px',
+            padding: '10px 22px',
+            borderRadius: '16px',
             boxShadow: '0 8px 30px rgba(0, 0, 0, 0.25)',
             position: 'relative',
-            zIndex: 3
+            zIndex: 3,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center'
           }}>
             <img
               src="/logo.svg"
               alt="KARE IEEE Education Society"
               style={{
-                height: '70px',
-                width: 'auto'
+                height: '54px',
+                width: 'auto',
+                maxWidth: '100%',
+                display: 'block',
+                objectFit: 'contain'
               }}
             />
           </div>
