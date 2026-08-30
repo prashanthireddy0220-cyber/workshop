@@ -137,6 +137,7 @@ const updateEventConfig = async (req, res) => {
       if (capacity !== undefined) event.capacity = capacity;
       if (registrationFee !== undefined) event.registrationFee = registrationFee;
       if (paymentUPI !== undefined) event.paymentUPI = paymentUPI;
+      if (organizer !== undefined) event.organizer = organizer;
       if (paymentQR !== undefined) {
         event.paymentQR = paymentQR;
         event.paymentQRUpdatedAt = Date.now();

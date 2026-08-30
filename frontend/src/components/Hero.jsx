@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getEventStatus } from '../services/api';
+import { getEventStatus, getEventDetails } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import Hero3DCanvas from './Hero3DCanvas';
 import { Calendar, MapPin, Clock, Users, ArrowRight, ShieldCheck, Zap, Sparkles } from 'lucide-react';
@@ -15,27 +15,55 @@ const Hero = ({ onRegisterClick, onLoginClick }) => {
     registrationOpen: true
   });
 
+  const [eventDetails, setEventDetails] = useState({
+    eventName: 'Intelligent Yield Prediction & AI/ML Workshop',
+    organizer: 'KARE IEEE Education Society',
+    date: '19 & 20 September 2026',
+    startTime: '09:30 AM',
+    endTime: '05:00 PM',
+    venue: 'IEEE Tech Hall, KARE Campus',
+    registrationFee: 250
+  });
+
   const [tilt, setTilt] = useState({ rx: 0, ry: 0 });
 
-  const fetchStatus = async () => {
+  const fetchData = async () => {
     try {
-      const res = await getEventStatus();
-      if (res.data.success) {
+      const [statusRes, detailsRes] = await Promise.allSettled([
+        getEventStatus(),
+        getEventDetails()
+      ]);
+
+      if (statusRes.status === 'fulfilled' && statusRes.value.data?.success) {
+        const s = statusRes.value.data;
         setStatus({
-          capacity: res.data.capacity,
-          registered: res.data.registered,
-          remaining: res.data.remaining,
-          registrationOpen: res.data.registrationOpen
+          capacity: s.capacity,
+          registered: s.registered,
+          remaining: s.remaining,
+          registrationOpen: s.registrationOpen
+        });
+      }
+
+      if (detailsRes.status === 'fulfilled' && detailsRes.value.data?.success && detailsRes.value.data?.event) {
+        const evt = detailsRes.value.data.event;
+        setEventDetails({
+          eventName: evt.eventName || 'Intelligent Yield Prediction & AI/ML Workshop',
+          organizer: evt.organizer || 'KARE IEEE Education Society',
+          date: evt.date || evt.eventDate || '19 & 20 September 2026',
+          startTime: evt.startTime || '09:30 AM',
+          endTime: evt.endTime || '05:00 PM',
+          venue: evt.venue || 'IEEE Tech Hall, KARE Campus',
+          registrationFee: evt.registrationFee || 250
         });
       }
     } catch (err) {
-      console.error('[Hero Status Error]', err);
+      console.error('[Hero Fetch Error]', err);
     }
   };
 
   useEffect(() => {
-    fetchStatus();
-    const interval = setInterval(fetchStatus, 10000);
+    fetchData();
+    const interval = setInterval(fetchData, 8000);
     return () => clearInterval(interval);
   }, []);
 
@@ -85,7 +113,7 @@ const Hero = ({ onRegisterClick, onLoginClick }) => {
         }}>
           <Zap size={16} color="#F97316" />
           <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#F97316', letterSpacing: '0.03em' }}>
-            KARE IEEE Education Society Presents
+            {eventDetails.organizer} Presents
           </span>
         </div>
 
@@ -99,7 +127,7 @@ const Hero = ({ onRegisterClick, onLoginClick }) => {
           textShadow: '0 10px 30px rgba(0,0,0,0.5)'
         }}>
           National Workshop on <br />
-          <span className="gradient-text">Intelligent Yield Prediction & AI/ML Models</span>
+          <span className="gradient-text">{eventDetails.eventName}</span>
         </h1>
 
         <p style={{
@@ -123,21 +151,21 @@ const Hero = ({ onRegisterClick, onLoginClick }) => {
         }}>
           <div className="glass-card" style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Calendar size={18} color="#F97316" />
-            <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>Sept 15-16, 2026 (2-Day Workshop)</span>
+            <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>{eventDetails.date}</span>
           </div>
 
           <div className="glass-card" style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Clock size={18} color="#38BDF8" />
-            <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>09:30 AM – 05:00 PM</span>
+            <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>{eventDetails.startTime} – {eventDetails.endTime}</span>
           </div>
 
           <div className="glass-card" style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <MapPin size={18} color="#34D399" />
-            <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>IEEE Tech Hall, KARE Campus</span>
+            <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>{eventDetails.venue}</span>
           </div>
 
           <div className="glass-card" style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: '10px', borderColor: 'rgba(249, 115, 22, 0.4)' }}>
-            <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#F97316' }}>Registration Fee: ₹250</span>
+            <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#F97316' }}>Registration Fee: ₹{eventDetails.registrationFee}</span>
           </div>
         </div>
 

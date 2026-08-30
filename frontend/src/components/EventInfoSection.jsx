@@ -1,7 +1,29 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapPin, Calendar, CreditCard, ShieldCheck, Mail, Phone, Award } from 'lucide-react';
+import { getEventDetails } from '../services/api';
 
 const EventInfoSection = () => {
+  const [eventDetails, setEventDetails] = useState({
+    date: '19 & 20 September 2026',
+    venue: 'IEEE Tech Hall, KARE Campus',
+    registrationFee: 250,
+    paymentUPI: 'ieee.kare@upi'
+  });
+
+  useEffect(() => {
+    getEventDetails().then((res) => {
+      if (res.data?.success && res.data.event) {
+        const evt = res.data.event;
+        setEventDetails({
+          date: evt.date || evt.eventDate || '19 & 20 September 2026',
+          venue: evt.venue || 'IEEE Tech Hall, KARE Campus',
+          registrationFee: evt.registrationFee || 250,
+          paymentUPI: evt.paymentUPI || 'ieee.kare@upi'
+        });
+      }
+    }).catch(() => {});
+  }, []);
+
   return (
     <section id="details" style={{ padding: '80px 24px' }}>
       <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
@@ -18,13 +40,13 @@ const EventInfoSection = () => {
           <div className="glass-card" style={{ padding: '28px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
               <Calendar size={22} color="#F97316" />
-              <h3 style={{ fontSize: '1.2rem', color: '#FFF' }}>Date & Deadline</h3>
+              <h3 style={{ fontSize: '1.2rem', color: '#FFF' }}>Date & Schedule</h3>
             </div>
             <p style={{ color: '#CBD5E1', fontSize: '0.95rem', marginBottom: '8px' }}>
-              <strong>Event Date:</strong> September 15-16, 2026 (2-Day Workshop)
+              <strong>Event Date:</strong> {eventDetails.date}
             </p>
             <p style={{ color: '#CBD5E1', fontSize: '0.95rem' }}>
-              <strong>Registration Deadline:</strong> September 14, 2026 (or until seats fill)
+              <strong>Registration Deadline:</strong> Prior to Event Start (or until seats fill)
             </p>
           </div>
 
@@ -34,7 +56,7 @@ const EventInfoSection = () => {
               <h3 style={{ fontSize: '1.2rem', color: '#FFF' }}>Venue & Location</h3>
             </div>
             <p style={{ color: '#CBD5E1', fontSize: '0.95rem', marginBottom: '8px' }}>
-              <strong>Venue:</strong> IEEE Tech Auditorium & CSE Lab
+              <strong>Venue:</strong> {eventDetails.venue}
             </p>
             <p style={{ color: '#CBD5E1', fontSize: '0.95rem' }}>
               <strong>Campus:</strong> Kalasalingam Academy of Research & Education (KARE)
@@ -47,10 +69,10 @@ const EventInfoSection = () => {
               <h3 style={{ fontSize: '1.2rem', color: '#FFF' }}>Registration Fee & UPI</h3>
             </div>
             <p style={{ color: '#CBD5E1', fontSize: '0.95rem', marginBottom: '8px' }}>
-              <strong>Registration Fee:</strong> ₹250 per participant
+              <strong>Registration Fee:</strong> ₹{eventDetails.registrationFee} per participant
             </p>
             <p style={{ color: '#CBD5E1', fontSize: '0.95rem' }}>
-              <strong>Official UPI ID:</strong> <code style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 8px', borderRadius: '4px', color: '#F97316' }}>ieee.kare@upi</code>
+              <strong>Official UPI ID:</strong> <code style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 8px', borderRadius: '4px', color: '#F97316' }}>{eventDetails.paymentUPI}</code>
             </p>
           </div>
 

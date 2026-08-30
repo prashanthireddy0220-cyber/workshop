@@ -300,15 +300,31 @@ const AdminControlCenter = () => {
     setLoading(true);
     try {
       await ensureAdminAuthToken();
-      const [dashboardRes, regRes] = await Promise.all([
+      const [dashboardRes, regRes, eventRes] = await Promise.all([
         getAdminDashboard().catch(err => ({ data: { success: false, stats: {} } })),
         getAdminRegistrations({
           q: searchQuery,
           department: deptFilter,
           year: yearFilter,
           paymentStatus: statusFilter
-        }).catch(err => ({ data: { success: false, registrations: [] } }))
+        }).catch(err => ({ data: { success: false, registrations: [] } })),
+        getEventDetails().catch(err => ({ data: { success: false } }))
       ]);
+
+      if (eventRes.data?.success && eventRes.data.event) {
+        const evt = eventRes.data.event;
+        setEventSettings(prev => ({
+          ...prev,
+          eventName: evt.eventName || prev.eventName,
+          organizedBy: evt.organizer || prev.organizedBy,
+          eventDate: evt.date || evt.eventDate || '19 & 20 September 2026',
+          venue: evt.venue || prev.venue,
+          fee: evt.registrationFee || prev.fee,
+          upiId: evt.paymentUPI || prev.upiId,
+          maxSpots: evt.capacity || prev.maxSpots,
+          registrationOpen: evt.registrationOpen !== false
+        }));
+      }
 
       if (dashboardRes.data.success) {
         const s = dashboardRes.data.stats;
@@ -428,10 +444,11 @@ const AdminControlCenter = () => {
     try {
       await updateEventConfig({
         eventName: eventSettings.eventName,
+        organizer: eventSettings.organizedBy,
         venue: eventSettings.venue,
         date: eventSettings.eventDate,
         capacity: parseInt(eventSettings.maxSpots) || 200,
-        registrationFee: parseInt(eventSettings.fee) || 300,
+        registrationFee: parseInt(eventSettings.fee) || 250,
         paymentUPI: eventSettings.upiId,
         registrationOpen: eventSettings.registrationOpen
       });
