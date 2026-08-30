@@ -131,17 +131,23 @@ const PageLoader = ({ isLoading = false, duration = 800, onComplete }) => {
               animation: 'glowPulse 2s ease-in-out infinite alternate'
             }}
           />
-          <img
-            src="/logo-white.svg"
-            alt="KARE IEEE Education Society"
-            style={{
-              height: '80px',
-              width: 'auto',
-              position: 'relative',
-              zIndex: 3,
-              filter: 'drop-shadow(0 0 15px rgba(249, 115, 22, 0.4))'
-            }}
-          />
+          <div style={{
+            background: '#FFFFFF',
+            padding: '12px 24px',
+            borderRadius: '20px',
+            boxShadow: '0 8px 30px rgba(0, 0, 0, 0.25)',
+            position: 'relative',
+            zIndex: 3
+          }}>
+            <img
+              src="/logo.svg"
+              alt="KARE IEEE Education Society"
+              style={{
+                height: '70px',
+                width: 'auto'
+              }}
+            />
+          </div>
         </div>
 
         {/* Text Branding */}

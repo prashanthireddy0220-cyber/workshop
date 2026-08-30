@@ -87,13 +87,13 @@ const AdminLoginPage = () => {
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '14px 22px',
-            background: 'rgba(249, 115, 22, 0.08)',
+            padding: '10px 20px',
+            background: '#FFFFFF',
             borderRadius: '18px',
-            border: '1px solid rgba(249, 115, 22, 0.22)',
+            boxShadow: '0 4px 18px rgba(0, 0, 0, 0.15)',
             marginBottom: '18px'
           }}>
-            <img src="/logo-white.svg" alt="KARE IEEE Education Society" style={{ height: '48px', width: 'auto' }} />
+            <img src="/logo.svg" alt="KARE IEEE Education Society" style={{ height: '44px', width: 'auto' }} />
           </div>
 
           <div style={{

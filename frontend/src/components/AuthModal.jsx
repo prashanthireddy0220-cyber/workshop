@@ -79,13 +79,13 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '12px 20px',
-            background: 'rgba(249, 115, 22, 0.08)',
-            borderRadius: '16px',
-            border: '1px solid rgba(249, 115, 22, 0.2)',
+            padding: '8px 16px',
+            background: '#FFFFFF',
+            borderRadius: '14px',
+            boxShadow: '0 4px 15px rgba(0, 0, 0, 0.15)',
             marginBottom: '16px'
           }}>
-            <img src="/logo-white.svg" alt="KARE IEEE Education Society" style={{ height: '44px', width: 'auto' }} />
+            <img src="/logo.svg" alt="KARE IEEE Education Society" style={{ height: '38px', width: 'auto' }} />
           </div>
           <h2 style={{ fontSize: '1.4rem', color: '#FFFFFF', fontWeight: 800, margin: '6px 0 0 0', letterSpacing: '-0.02em' }}>
             Google Authentication

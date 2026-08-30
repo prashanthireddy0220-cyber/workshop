@@ -46,7 +46,16 @@ const Navbar = ({ onOpenAuth, onOpenDashboard }) => {
       }}>
         {/* Brand Logo */}
         <a href="/" style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none' }}>
-          <img src="/logo-white.svg" alt="KARE IEEE Education Society" style={{ height: '48px', width: 'auto' }} />
+          <div style={{
+            background: '#FFFFFF',
+            padding: '4px 10px',
+            borderRadius: '10px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.15)'
+          }}>
+            <img src="/logo.svg" alt="KARE IEEE Education Society" style={{ height: '38px', width: 'auto' }} />
+          </div>
         </a>
 
         {/* Desktop Navigation Links */}

@@ -72,8 +72,15 @@ const AdminSidebar = ({ activeTab, onSelectTab, isMobileOpen, onCloseMobile }) =
           alignItems: 'center',
           justifyContent: 'space-between'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <img src="/logo-white.svg" alt="KARE IEEE Education Society" style={{ height: '40px', width: 'auto' }} />
+          <div style={{
+            background: '#FFFFFF',
+            padding: '4px 10px',
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.12)'
+          }}>
+            <img src="/logo.svg" alt="KARE IEEE Education Society" style={{ height: '32px', width: 'auto' }} />
           </div>
 
           <button
