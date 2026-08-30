@@ -36,25 +36,11 @@ const Navbar = ({ onOpenAuth, onOpenDashboard }) => {
       borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
       transition: 'all 0.3s ease'
     }}>
-      <div style={{
-        maxWidth: '1280px',
-        margin: '0 auto',
-        padding: '14px 24px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between'
-      }}>
+      <div className="nav-container">
         {/* Brand Logo */}
-        <a href="/" style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none' }}>
-          <div style={{
-            background: '#FFFFFF',
-            padding: '4px 10px',
-            borderRadius: '10px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.15)'
-          }}>
-            <img src="/logo.svg" alt="KARE IEEE Education Society" style={{ height: '38px', width: 'auto' }} />
+        <a href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
+          <div className="nav-logo-box">
+            <img src="/logo.svg" alt="KARE IEEE Education Society" className="nav-logo-img" />
           </div>
         </a>
 
@@ -76,22 +62,22 @@ const Navbar = ({ onOpenAuth, onOpenDashboard }) => {
         </div>
 
         {/* Action Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {user ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               {user.role === 'admin' ? (
                 <a
                   href="/admin"
-                  className="btn-primary"
-                  style={{ padding: '8px 18px', fontSize: '0.875rem', textDecoration: 'none' }}
+                  className="btn-primary nav-auth-btn"
+                  style={{ textDecoration: 'none' }}
                 >
-                  <User size={16} />
+                  <User size={15} />
                   Admin Portal
                 </a>
               ) : (
-                <button onClick={onOpenDashboard} className="btn-primary" style={{ padding: '8px 18px', fontSize: '0.875rem' }}>
-                  <User size={16} />
-                  My Dashboard
+                <button onClick={onOpenDashboard} className="btn-primary nav-auth-btn">
+                  <User size={15} />
+                  Dashboard
                 </button>
               )}
 
@@ -102,8 +88,8 @@ const Navbar = ({ onOpenAuth, onOpenDashboard }) => {
                   background: 'rgba(255, 255, 255, 0.06)',
                   border: '1px solid rgba(255, 255, 255, 0.1)',
                   color: '#94A3B8',
-                  padding: '8px 10px',
-                  borderRadius: '10px',
+                  padding: '6px 8px',
+                  borderRadius: '8px',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
@@ -112,12 +98,12 @@ const Navbar = ({ onOpenAuth, onOpenDashboard }) => {
                 onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'; e.currentTarget.style.color = '#F87171'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)'; e.currentTarget.style.color = '#94A3B8'; }}
               >
-                <LogOut size={16} />
+                <LogOut size={15} />
               </button>
             </div>
           ) : (
-            <button onClick={onOpenAuth} className="btn-primary">
-              <User size={18} />
+            <button onClick={onOpenAuth} className="btn-primary nav-auth-btn">
+              <User size={16} />
               Google Login
             </button>
           )}
