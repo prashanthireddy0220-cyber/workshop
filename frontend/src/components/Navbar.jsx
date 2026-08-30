@@ -46,7 +46,7 @@ const Navbar = ({ onOpenAuth, onOpenDashboard }) => {
       }}>
         {/* Brand Logo */}
         <a href="/" style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none' }}>
-          <img src="/logo.svg" alt="KARE IEEE Education Society" style={{ height: '44px', width: 'auto' }} />
+          <img src="/logo-white.svg" alt="KARE IEEE Education Society" style={{ height: '48px', width: 'auto' }} />
         </a>
 
         {/* Desktop Navigation Links */}

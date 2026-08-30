@@ -85,7 +85,7 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
             border: '1px solid rgba(249, 115, 22, 0.2)',
             marginBottom: '16px'
           }}>
-            <img src="/logo.svg" alt="KARE IEEE Education Society" style={{ height: '42px', width: 'auto' }} />
+            <img src="/logo-white.svg" alt="KARE IEEE Education Society" style={{ height: '44px', width: 'auto' }} />
           </div>
           <h2 style={{ fontSize: '1.4rem', color: '#FFFFFF', fontWeight: 800, margin: '6px 0 0 0', letterSpacing: '-0.02em' }}>
             Google Authentication

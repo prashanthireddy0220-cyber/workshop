@@ -93,7 +93,7 @@ const AdminLoginPage = () => {
             border: '1px solid rgba(249, 115, 22, 0.22)',
             marginBottom: '18px'
           }}>
-            <img src="/logo.svg" alt="KARE IEEE Education Society" style={{ height: '46px', width: 'auto' }} />
+            <img src="/logo-white.svg" alt="KARE IEEE Education Society" style={{ height: '48px', width: 'auto' }} />
           </div>
 
           <div style={{

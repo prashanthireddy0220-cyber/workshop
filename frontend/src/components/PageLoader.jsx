@@ -132,7 +132,7 @@ const PageLoader = ({ isLoading = false, duration = 800, onComplete }) => {
             }}
           />
           <img
-            src="/logo.svg"
+            src="/logo-white.svg"
             alt="KARE IEEE Education Society"
             style={{
               height: '80px',

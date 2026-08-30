@@ -20,7 +20,7 @@ const Footer = () => {
 
         {/* Col 1: Brand */}
         <div>
-          <img src="/logo.svg" alt="KARE IEEE Education Society" style={{ height: '45px', marginBottom: '16px' }} />
+          <img src="/logo-white.svg" alt="KARE IEEE Education Society" style={{ height: '48px', marginBottom: '16px' }} />
           <p style={{ fontSize: '0.9rem', lineHeight: '1.6', margin: 0 }}>
             Official workshop registration & digital credentialing platform for Kalasalingam Academy of Research and Education (KARE) IEEE Education Society Student Branch Chapter.
           </p>

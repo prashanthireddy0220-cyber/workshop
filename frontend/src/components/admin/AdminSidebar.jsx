@@ -73,7 +73,7 @@ const AdminSidebar = ({ activeTab, onSelectTab, isMobileOpen, onCloseMobile }) =
           justifyContent: 'space-between'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <img src="/logo.svg" alt="KARE IEEE" style={{ height: '36px', width: 'auto' }} />
+            <img src="/logo-white.svg" alt="KARE IEEE Education Society" style={{ height: '40px', width: 'auto' }} />
           </div>
 
           <button
